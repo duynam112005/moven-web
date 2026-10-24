@@ -52,7 +52,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Đăng nhập không thành công. Vui lòng kiểm tra lại thông tin.';
+          _errorMessage =
+              'Đăng nhập không thành công. Vui lòng kiểm tra lại thông tin.';
         });
       }
     } finally {
@@ -91,7 +92,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: AppDimensions.space8),
-                  Text(
+                  const Text(
                     'Chào mừng bạn trở lại với MOVEN',
                     style: AppTypography.bodySmall,
                     textAlign: TextAlign.center,
@@ -103,7 +104,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       padding: const EdgeInsets.all(AppDimensions.space12),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFEE2E2),
-                        borderRadius: BorderRadius.circular(AppDimensions.radius8),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radius8,
+                        ),
                       ),
                       child: Text(
                         _errorMessage!,
@@ -161,7 +164,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () => context.goNamed(RouteNames.forgotPassword),
+                      onPressed: () =>
+                          context.goNamed(RouteNames.forgotPassword),
                       child: const Text('Quên mật khẩu?'),
                     ),
                   ),

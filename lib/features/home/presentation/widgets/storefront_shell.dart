@@ -15,10 +15,37 @@ class StorefrontShell extends ConsumerWidget {
 
   const StorefrontShell({super.key, required this.child});
 
+  String _getCurrentPath(BuildContext context) {
+    try {
+      final path = GoRouterState.of(context).uri.path;
+      if (path.length > 1 && path.endsWith('/')) {
+        return path.substring(0, path.length - 1);
+      }
+      return path;
+    } catch (_) {
+      return '';
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isAuthenticated = ref.watch(isAuthenticatedProvider);
     final isDesktop = context.isDesktop;
+    final currentPath = _getCurrentPath(context);
+
+    final isHomeActive = currentPath == RouteNames.homePath;
+    final isCatalogActive =
+        currentPath == RouteNames.catalogPath ||
+        currentPath.startsWith('${RouteNames.catalogPath}/') ||
+        currentPath == '/products' ||
+        currentPath.startsWith('/products/') ||
+        currentPath.startsWith('/product/');
+    final isShippingPolicyActive =
+        currentPath == RouteNames.shippingPolicyPath ||
+        currentPath.startsWith('${RouteNames.shippingPolicyPath}/');
+    final isContactActive =
+        currentPath == RouteNames.contactPath ||
+        currentPath.startsWith('${RouteNames.contactPath}/');
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -46,7 +73,9 @@ class StorefrontShell extends ConsumerWidget {
                       // Logo MOVEN
                       InkWell(
                         onTap: () => context.goNamed(RouteNames.home),
-                        borderRadius: BorderRadius.circular(AppDimensions.radius4),
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radius4,
+                        ),
                         child: const Padding(
                           padding: EdgeInsets.symmetric(
                             horizontal: AppDimensions.space8,
@@ -71,21 +100,26 @@ class StorefrontShell extends ConsumerWidget {
                         _buildNavLink(
                           context,
                           label: 'Trang chủ',
+                          isActive: isHomeActive,
                           onTap: () => context.goNamed(RouteNames.home),
                         ),
                         _buildNavLink(
                           context,
                           label: 'Sản phẩm',
+                          isActive: isCatalogActive,
                           onTap: () => context.goNamed(RouteNames.catalog),
                         ),
                         _buildNavLink(
                           context,
                           label: 'Chính sách giao hàng',
-                          onTap: () => context.goNamed(RouteNames.shippingPolicy),
+                          isActive: isShippingPolicyActive,
+                          onTap: () =>
+                              context.goNamed(RouteNames.shippingPolicy),
                         ),
                         _buildNavLink(
                           context,
                           label: 'Liên hệ',
+                          isActive: isContactActive,
                           onTap: () => context.goNamed(RouteNames.contact),
                         ),
                       ],
@@ -130,9 +164,7 @@ class StorefrontShell extends ConsumerWidget {
           children: [
             // Body Content
             ConstrainedBox(
-              constraints: const BoxConstraints(
-                minHeight: 500,
-              ),
+              constraints: const BoxConstraints(minHeight: 500),
               child: child,
             ),
 
@@ -148,22 +180,28 @@ class StorefrontShell extends ConsumerWidget {
     BuildContext context, {
     required String label,
     required VoidCallback onTap,
+    required bool isActive,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.space12),
+      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.space4),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppDimensions.radius4),
-        child: Padding(
+        borderRadius: BorderRadius.circular(AppDimensions.radius8),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(
-            horizontal: AppDimensions.space8,
-            vertical: AppDimensions.space4,
+            horizontal: AppDimensions.space12,
+            vertical: AppDimensions.space8,
+          ),
+          decoration: BoxDecoration(
+            color: isActive ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppDimensions.radius8),
           ),
           child: Text(
             label,
             style: AppTypography.bodyMedium.copyWith(
-              fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
+              fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+              color: isActive ? AppColors.onPrimary : AppColors.textPrimary,
             ),
           ),
         ),
@@ -296,9 +334,7 @@ class StorefrontShell extends ConsumerWidget {
         onTap: onTap,
         child: Text(
           label,
-          style: AppTypography.bodySmall.copyWith(
-            color: AppColors.textMuted,
-          ),
+          style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
         ),
       ),
     );
