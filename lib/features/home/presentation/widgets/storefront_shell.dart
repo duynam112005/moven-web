@@ -7,6 +7,7 @@ import '../../../../core/constants/app_typography.dart';
 import '../../../../core/network/supabase_client.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/utils/responsive_layout.dart';
+import '../../../auth/data/auth_repository.dart';
 
 /// Khung giao diện chuẩn dành cho Khách hàng (Customer Storefront Shell)
 /// Bao gồm Header (Logo, Điều hướng, Giỏ hàng, Tài khoản), nội dung chính và Footer.
@@ -140,11 +141,7 @@ class StorefrontShell extends ConsumerWidget {
 
                       // Auth / Profile Button
                       if (isAuthenticated)
-                        IconButton(
-                          tooltip: 'Tài khoản',
-                          icon: const Icon(Icons.person_outline, size: 22),
-                          onPressed: () => context.goNamed(RouteNames.profile),
-                        )
+                        _buildUserMenu(context, ref)
                       else
                         TextButton.icon(
                           onPressed: () => context.goNamed(RouteNames.login),
@@ -171,6 +168,85 @@ class StorefrontShell extends ConsumerWidget {
             // Storefront Footer
             _buildFooter(context),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserMenu(BuildContext context, WidgetRef ref) {
+    final profileAsync = ref.watch(userProfileProvider);
+    final displayName = profileAsync.value?.fullName ?? '';
+    final initial =
+        displayName.isNotEmpty ? displayName[0].toUpperCase() : '?';
+
+    return PopupMenuButton<String>(
+      tooltip: 'Tài khoản',
+      offset: const Offset(0, 40),
+      onSelected: (value) async {
+        if (value == 'profile') {
+          context.goNamed(RouteNames.profile);
+        } else if (value == 'logout') {
+          try {
+            await ref.read(authRepositoryProvider).signOut();
+            ref.invalidate(userProfileProvider);
+            if (context.mounted) context.go(RouteNames.homePath);
+          } catch (_) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                    content: Text('Đăng xuất không thành công.')),
+              );
+            }
+          }
+        }
+      },
+      itemBuilder: (_) => [
+        PopupMenuItem(
+          enabled: false,
+          child: Text(
+            displayName.isNotEmpty ? displayName : 'Tài khoản',
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+        const PopupMenuDivider(),
+        const PopupMenuItem(
+          value: 'profile',
+          child: Row(
+            children: [
+              Icon(Icons.person_outline, size: 18),
+              SizedBox(width: 8),
+              Text('Hồ sơ cá nhân'),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'logout',
+          child: Row(
+            children: [
+              Icon(Icons.logout, size: 18, color: AppColors.error),
+              SizedBox(width: 8),
+              Text('Đăng xuất',
+                  style: TextStyle(color: AppColors.error)),
+            ],
+          ),
+        ),
+      ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppDimensions.space8),
+        child: CircleAvatar(
+          radius: 16,
+          backgroundColor: AppColors.primary,
+          child: Text(
+            initial,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
       ),
     );
