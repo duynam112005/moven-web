@@ -11,13 +11,13 @@ class AppConfig {
   /// URL dự án Supabase (vd: https://xyzcompany.supabase.co)
   static const String supabaseUrl = String.fromEnvironment(
     'SUPABASE_URL',
-    defaultValue: '',
+    defaultValue: 'https://yutcybbyawjlzqplbndq.supabase.co',
   );
 
   /// Anon Key công khai của Supabase (an toàn trên client khi kết hợp RLS)
   static const String supabaseAnonKey = String.fromEnvironment(
     'SUPABASE_ANON_KEY',
-    defaultValue: '',
+    defaultValue: 'sb_publishable_LT7sT_PZATz4_uXLJJr5Sg_2RViRiq5',
   );
 
   /// Môi trường thực thi: 'development', 'staging', 'production'
