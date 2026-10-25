@@ -10,7 +10,11 @@ final supabaseClientProvider = Provider<SupabaseClient>((ref) {
       'Supabase chưa được cấu hình. Vui lòng cung cấp SUPABASE_URL và SUPABASE_ANON_KEY.',
     );
   }
-  return Supabase.instance.client;
+  try {
+    return Supabase.instance.client;
+  } catch (e) {
+    throw StateError('Supabase chưa được khởi tạo: $e');
+  }
 });
 
 /// Provider lắng nghe thay đổi trạng thái xác thực (Auth State Changes)
@@ -18,17 +22,25 @@ final authStateChangesProvider = StreamProvider<AuthState>((ref) {
   if (!AppConfig.isSupabaseConfigured) {
     return const Stream.empty();
   }
-  final client = ref.watch(supabaseClientProvider);
-  return client.auth.onAuthStateChange;
+  try {
+    final client = Supabase.instance.client;
+    return client.auth.onAuthStateChange;
+  } catch (_) {
+    return const Stream.empty();
+  }
 });
 
 /// Provider cung cấp thông tin người dùng hiện tại (nếu đã đăng nhập)
 final currentUserProvider = Provider<User?>((ref) {
   if (!AppConfig.isSupabaseConfigured) return null;
-  // Lắng nghe thay đổi auth để tự động cập nhật user
-  ref.watch(authStateChangesProvider);
-  final client = ref.watch(supabaseClientProvider);
-  return client.auth.currentUser;
+  try {
+    // Lắng nghe thay đổi auth để tự động cập nhật user
+    ref.watch(authStateChangesProvider);
+    final client = Supabase.instance.client;
+    return client.auth.currentUser;
+  } catch (_) {
+    return null;
+  }
 });
 
 /// Provider kiểm tra trạng thái đăng nhập
