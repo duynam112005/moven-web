@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:moven/features/auth/presentation/controllers/auth_controller.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_typography.dart';
@@ -40,46 +41,49 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _errorMessage = null;
     });
 
-    try {
-      // Trong Giai đoạn 1 (Base), Supabase Auth sẽ được kết nối đầy đủ tại Giai đoạn 3.
-      // Dưới đây là xử lý khung đăng nhập an toàn.
-      await Future.delayed(const Duration(milliseconds: 600));
+    final success = await ref.read(authControllerProvider.notifier).login(
+          email: _emailController.text,
+          password: _passwordController.text,
+        );
 
-      if (mounted) {
-        final target = widget.redirectPath ?? RouteNames.homePath;
-        context.go(target);
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage =
-              'Đăng nhập không thành công. Vui lòng kiểm tra lại thông tin.';
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+    if (!mounted) return;
+
+    if (success) {
+      // Đọc role từ DB (trusted) để quyết định routing
+      final isAdmin = ref.read(isAdminProvider);
+      final target = isAdmin
+          ? RouteNames.adminDashboardPath
+          : (widget.redirectPath ?? RouteNames.homePath);
+      context.go(target);
+    } else {
+      final authState = ref.read(authControllerProvider);
+      setState(() {
+        _isLoading = false;
+        _errorMessage = authState.errorMessage ??
+            'Đăng nhập không thành công. Vui lòng kiểm tra lại thông tin.';
+      });
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 440),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDimensions.space24,
-            vertical: AppDimensions.space48,
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(AppDimensions.space32),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppDimensions.radius12),
-              border: Border.all(color: AppColors.border),
+    return SingleChildScrollView(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimensions.space24,
+              vertical: AppDimensions.space48,
             ),
+            child: Container(
+              padding: const EdgeInsets.all(AppDimensions.space32),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(AppDimensions.radius12),
+                border: Border.all(color: AppColors.border),
+              ),
             child: Form(
               key: _formKey,
               child: Column(
@@ -183,8 +187,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: AppDimensions.space24),
 
                   // Register link
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       const Text(
                         'Chưa có tài khoản? ',
@@ -208,6 +213,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
 }
+}
+

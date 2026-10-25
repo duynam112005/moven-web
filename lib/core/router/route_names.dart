@@ -31,6 +31,9 @@ class RouteNames {
   static const String forgotPassword = 'forgot_password';
   static const String forgotPasswordPath = '/forgot-password';
 
+  static const String resetPassword = 'reset_password';
+  static const String resetPasswordPath = '/reset-password';
+
   // Customer Routes (Yêu cầu đăng nhập)
   static const String cart = 'cart';
   static const String cartPath = '/cart';

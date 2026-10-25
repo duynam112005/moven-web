@@ -3,9 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/admin/presentation/admin_dashboard_screen.dart';
 import '../../features/admin/presentation/admin_shell_screen.dart';
+import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
+import '../../features/auth/presentation/register_screen.dart';
+import '../../features/auth/presentation/reset_password_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/home/presentation/widgets/storefront_shell.dart';
+import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/static_pages/presentation/static_page_screen.dart';
 import '../network/supabase_client.dart';
 import '../widgets/empty_state_view.dart';
@@ -35,7 +39,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isAdminRoute = location.startsWith('/admin');
       final isCustomerProtectedRoute = location == RouteNames.checkoutPath ||
           location.startsWith(RouteNames.ordersPath) ||
-          location == RouteNames.profilePath;
+          location == RouteNames.profilePath ||
+          location == RouteNames.addressesPath;
 
       // Bảo vệ Admin routes: nếu không phải Admin, chuyển hướng về Login
       if (isAdminRoute && !isAdmin) {
@@ -132,11 +137,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: RouteNames.profilePath,
             name: RouteNames.profile,
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: EmptyStateView(
-                icon: Icons.person_outline,
-                title: 'Hồ sơ cá nhân',
-                description: 'Quản lý thông tin và sổ địa chỉ.',
-              ),
+              child: ProfileScreen(),
+            ),
+          ),
+          GoRoute(
+            path: RouteNames.addressesPath,
+            name: RouteNames.addresses,
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: ProfileScreen(),
             ),
           ),
         ],
@@ -160,13 +168,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: RouteNames.register,
         pageBuilder: (context, state) => const NoTransitionPage(
           child: Scaffold(
-            body: Center(
-              child: EmptyStateView(
-                icon: Icons.person_add_outlined,
-                title: 'Đăng ký tài khoản',
-                description: 'Chức năng đăng ký tài khoản sẽ kết nối tại Giai đoạn 3.',
-              ),
-            ),
+            body: RegisterScreen(),
           ),
         ),
       ),
@@ -175,13 +177,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: RouteNames.forgotPassword,
         pageBuilder: (context, state) => const NoTransitionPage(
           child: Scaffold(
-            body: Center(
-              child: EmptyStateView(
-                icon: Icons.lock_reset_outlined,
-                title: 'Khôi phục mật khẩu',
-                description: 'Vui lòng nhập email để nhận liên kết đặt lại mật khẩu.',
-              ),
-            ),
+            body: ForgotPasswordScreen(),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.resetPasswordPath,
+        name: RouteNames.resetPassword,
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: Scaffold(
+            body: ResetPasswordScreen(),
           ),
         ),
       ),
