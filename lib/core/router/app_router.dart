@@ -7,8 +7,10 @@ import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
 import '../../features/auth/presentation/reset_password_screen.dart';
+import '../../features/catalog/presentation/catalog_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/home/presentation/widgets/storefront_shell.dart';
+import '../../features/product_detail/presentation/product_detail_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/static_pages/presentation/static_page_screen.dart';
 import '../network/supabase_client.dart';
@@ -71,12 +73,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: RouteNames.catalogPath,
             name: RouteNames.catalog,
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: EmptyStateView(
-                icon: Icons.checkroom_outlined,
-                title: 'Danh mục sản phẩm',
-                description: 'Danh sách sản phẩm sẽ sẵn sàng khi hoàn thiện Giai đoạn 4.',
-              ),
+              child: CatalogScreen(),
             ),
+          ),
+          GoRoute(
+            path: RouteNames.productDetailPath,
+            name: RouteNames.productDetail,
+            pageBuilder: (context, state) {
+              final slug = state.pathParameters['slug'] ?? '';
+              return NoTransitionPage(
+                child: ProductDetailScreen(slug: slug),
+              );
+            },
           ),
           GoRoute(
             path: RouteNames.contactPath,

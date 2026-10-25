@@ -49,11 +49,23 @@ dependencies:
   # Vector Graphics
   flutter_svg: ^2.0.17
 
+  # Code Generation Annotations
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
+
+  # File Picker for Web/Mobile
+  file_picker: ^8.1.7
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
   flutter_lints: ^6.0.0
+
+  # Code Generation
+  build_runner: ^2.4.13
+  freezed: ^2.5.7
+  json_serializable: ^6.8.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
