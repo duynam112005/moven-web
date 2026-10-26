@@ -11,6 +11,8 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_loading.dart';
 import '../../../core/widgets/empty_state_view.dart';
 import '../../../core/widgets/error_state_view.dart';
+import '../../../core/network/supabase_client.dart';
+import '../../cart/data/cart_providers.dart';
 import '../../catalog/data/catalog_providers.dart';
 import '../../catalog/data/storage_repository.dart';
 import '../../catalog/domain/models/product.dart';
@@ -541,18 +543,60 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           icon: const Icon(Icons.shopping_bag_outlined, size: 20),
           isFullWidth: true,
           height: AppDimensions.buttonHeightLg,
-          onPressed: inStock
-              ? () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      backgroundColor: AppColors.primary,
-                      content: Text(
-                        'Đã chọn: ${product.name} (${selected?.displayLabel ?? "Mặc định"}) x $_quantity. '
-                        'Tính năng Giỏ hàng & Checkout COD sẽ sẵn sàng tại Giai đoạn 5!',
+          onPressed: (inStock && selected != null)
+              ? () async {
+                  final isAuth = ref.read(isAuthenticatedProvider);
+                  if (!isAuth) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text(
+                          'Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.',
+                        ),
+                        action: SnackBarAction(
+                          label: 'Đăng nhập',
+                          textColor: AppColors.onPrimary,
+                          onPressed: () =>
+                              context.push(RouteNames.loginPath),
+                        ),
                       ),
-                      duration: const Duration(seconds: 4),
-                    ),
-                  );
+                    );
+                    return;
+                  }
+
+                  try {
+                    await ref
+                        .read(cartNotifierProvider.notifier)
+                        .addToCart(
+                          variantId: selected.id,
+                          quantity: _quantity,
+                        );
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: AppColors.primary,
+                          content: Text(
+                            'Đã thêm "${product.name} (${selected.displayLabel})" x $_quantity vào giỏ hàng!',
+                          ),
+                          action: SnackBarAction(
+                            label: 'Xem giỏ hàng',
+                            textColor: AppColors.onPrimary,
+                            onPressed: () =>
+                                context.push(RouteNames.cartPath),
+                          ),
+                          duration: const Duration(seconds: 4),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: AppColors.error,
+                          content: Text('Lỗi: $e'),
+                        ),
+                      );
+                    }
+                  }
                 }
               : null,
         ),

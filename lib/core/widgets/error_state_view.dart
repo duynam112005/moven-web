@@ -22,25 +22,25 @@ class ErrorStateView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppDimensions.space32),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppDimensions.space24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(AppDimensions.space20),
+              padding: const EdgeInsets.all(AppDimensions.space16),
               decoration: const BoxDecoration(
                 color: Color(0xFFFEE2E2),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.error_outline,
-                size: 48,
+                size: 40,
                 color: AppColors.error,
               ),
             ),
-            const SizedBox(height: AppDimensions.space20),
+            const SizedBox(height: AppDimensions.space16),
             Text(
               title ?? 'Đã xảy ra lỗi',
               style: AppTypography.titleLarge,
@@ -51,6 +51,8 @@ class ErrorStateView extends StatelessWidget {
               constraints: const BoxConstraints(maxWidth: 420),
               child: Text(
                 message,
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
                 style: AppTypography.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                 ),

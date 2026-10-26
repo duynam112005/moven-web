@@ -3,10 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/admin/presentation/admin_dashboard_screen.dart';
 import '../../features/admin/presentation/admin_shell_screen.dart';
+import '../../features/admin/presentation/banners/admin_banner_screen.dart';
+import '../../features/admin/presentation/catalog/admin_catalog_screen.dart';
+import '../../features/admin/presentation/catalog/admin_category_form_screen.dart';
+import '../../features/admin/presentation/catalog/admin_product_form_screen.dart';
 import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
 import '../../features/auth/presentation/reset_password_screen.dart';
+import '../../features/cart/presentation/cart_screen.dart';
+import '../../features/checkout/presentation/checkout_screen.dart';
 import '../../features/catalog/presentation/catalog_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/home/presentation/widgets/storefront_shell.dart';
@@ -111,23 +117,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: RouteNames.cartPath,
             name: RouteNames.cart,
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: EmptyStateView(
-                icon: Icons.shopping_bag_outlined,
-                title: 'Giỏ hàng của bạn đang trống',
-                description: 'Hãy chọn những trang phục yêu thích để thêm vào giỏ.',
-                actionLabel: 'Mua sắm ngay',
-              ),
+              child: CartScreen(),
             ),
           ),
           GoRoute(
             path: RouteNames.checkoutPath,
             name: RouteNames.checkout,
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: EmptyStateView(
-                icon: Icons.local_shipping_outlined,
-                title: 'Thanh toán COD',
-                description: 'Màn hình checkout COD sẽ kết nối tại Giai đoạn 5.',
-              ),
+              child: CheckoutScreen(),
             ),
           ),
           GoRoute(
@@ -215,11 +212,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: RouteNames.adminCatalogPath,
             name: RouteNames.adminCatalog,
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: EmptyStateView(
-                icon: Icons.category_outlined,
-                title: 'Quản lý Catalog & Sản phẩm',
-                description: 'CRUD sản phẩm, danh mục và ảnh Storage (Giai đoạn 4).',
-              ),
+              child: AdminCatalogScreen(),
             ),
           ),
           GoRoute(
@@ -248,11 +241,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: RouteNames.adminBannersPath,
             name: RouteNames.adminBanners,
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: EmptyStateView(
-                icon: Icons.view_carousel_outlined,
-                title: 'Quản lý Banner',
-                description: 'Tải lên và cấu hình lịch hiển thị banner trang chủ.',
-              ),
+              child: AdminBannerScreen(),
             ),
           ),
           GoRoute(
@@ -278,6 +267,42 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ),
           ),
         ],
+      ),
+
+      // 4. Admin catalog sub-routes (top-level, full-screen, no admin shell)
+      GoRoute(
+        path: RouteNames.adminCategoryCreatePath,
+        name: RouteNames.adminCategoryCreate,
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: AdminCategoryFormScreen(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.adminCategoryEditPath,
+        name: RouteNames.adminCategoryEdit,
+        pageBuilder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          return NoTransitionPage(
+            child: AdminCategoryFormScreen(categoryId: id),
+          );
+        },
+      ),
+      GoRoute(
+        path: RouteNames.adminProductCreatePath,
+        name: RouteNames.adminProductCreate,
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: AdminProductFormScreen(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.adminProductEditPath,
+        name: RouteNames.adminProductEdit,
+        pageBuilder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          return NoTransitionPage(
+            child: AdminProductFormScreen(productId: id),
+          );
+        },
       ),
     ],
   );
