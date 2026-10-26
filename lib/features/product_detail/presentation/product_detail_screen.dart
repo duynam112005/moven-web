@@ -18,6 +18,9 @@ import '../../catalog/data/storage_repository.dart';
 import '../../catalog/domain/models/product.dart';
 import '../../catalog/domain/models/product_image.dart';
 import '../../catalog/domain/models/product_variant.dart';
+import '../../reviews/presentation/providers/reviews_providers.dart';
+import '../../reviews/presentation/widgets/product_reviews_section.dart';
+import '../../reviews/presentation/widgets/rating_stars.dart';
 
 /// Màn hình chi tiết sản phẩm dành cho khách hàng (Storefront Product Detail)
 class ProductDetailScreen extends ConsumerStatefulWidget {
@@ -165,6 +168,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         _buildProductInfo(product),
                       ],
                     ),
+
+                  const SizedBox(height: AppDimensions.space48),
+
+                  // Khối Đánh giá & Nhận xét sản phẩm (Phase 7)
+                  ProductReviewsSection(
+                    productId: product.id,
+                    productName: product.name,
+                  ),
                 ],
               ),
             ),
@@ -356,6 +367,41 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         Text(
           product.name,
           style: AppTypography.displayMedium.copyWith(fontSize: 26),
+        ),
+
+        // Rating quick info (Phase 7)
+        Consumer(
+          builder: (context, ref, _) {
+            final summaryAsync =
+                ref.watch(productRatingSummaryProvider(product.id));
+            final summary = summaryAsync.valueOrNull;
+            if (summary == null || summary.totalReviews == 0) {
+              return const SizedBox.shrink();
+            }
+            return Padding(
+              padding: const EdgeInsets.only(top: AppDimensions.space6),
+              child: Row(
+                children: [
+                  RatingStars.small(rating: summary.averageRating),
+                  const SizedBox(width: AppDimensions.space6),
+                  Text(
+                    summary.averageRating.toStringAsFixed(1),
+                    style: AppTypography.bodySmall.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: AppDimensions.space4),
+                  Text(
+                    '(${summary.totalReviews} đánh giá)',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
 
         const SizedBox(height: AppDimensions.space16),

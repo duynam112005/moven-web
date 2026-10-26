@@ -19,6 +19,7 @@ import '../../features/home/presentation/widgets/storefront_shell.dart';
 import '../../features/orders/presentation/admin/admin_orders_screen.dart';
 import '../../features/orders/presentation/customer/order_detail_screen.dart';
 import '../../features/orders/presentation/customer/orders_screen.dart';
+import '../../features/admin/presentation/reviews/admin_reviews_screen.dart';
 import '../../features/product_detail/presentation/product_detail_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/static_pages/presentation/static_page_screen.dart';
@@ -253,11 +254,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: RouteNames.adminReviewsPath,
             name: RouteNames.adminReviews,
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: EmptyStateView(
-                icon: Icons.rate_review_outlined,
-                title: 'Kiểm duyệt Đánh giá & Báo cáo',
-                description: 'Xử lý báo cáo và ẩn/khôi phục đánh giá sản phẩm.',
-              ),
+              child: AdminReviewsScreen(),
             ),
           ),
           GoRoute(
