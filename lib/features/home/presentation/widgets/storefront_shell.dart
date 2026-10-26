@@ -8,6 +8,7 @@ import '../../../../core/network/supabase_client.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/utils/responsive_layout.dart';
 import '../../../auth/data/auth_repository.dart';
+import '../../../cart/data/cart_providers.dart';
 
 /// Khung giao diện chuẩn dành cho Khách hàng (Customer Storefront Shell)
 /// Bao gồm Header (Logo, Điều hướng, Giỏ hàng, Tài khoản), nội dung chính và Footer.
@@ -127,14 +128,19 @@ class StorefrontShell extends ConsumerWidget {
 
                       const Spacer(),
 
-                      // Cart Icon
-                      IconButton(
-                        tooltip: 'Giỏ hàng',
-                        icon: const Badge(
-                          label: Text('0'),
-                          child: Icon(Icons.shopping_bag_outlined, size: 22),
-                        ),
-                        onPressed: () => context.goNamed(RouteNames.cart),
+                      // Cart Icon with dynamic item count badge
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final cartCount = ref.watch(cartItemCountProvider);
+                          return IconButton(
+                            tooltip: 'Giỏ hàng',
+                            icon: Badge(
+                              label: Text('$cartCount'),
+                              child: const Icon(Icons.shopping_bag_outlined, size: 22),
+                            ),
+                            onPressed: () => context.goNamed(RouteNames.cart),
+                          );
+                        },
                       ),
 
                       const SizedBox(width: AppDimensions.space8),

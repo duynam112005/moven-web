@@ -60,6 +60,18 @@ class RouteNames {
   static const String adminCatalog = 'admin_catalog';
   static const String adminCatalogPath = '/admin/catalog';
 
+  static const String adminCategoryCreate = 'admin_category_create';
+  static const String adminCategoryCreatePath = '/admin/catalog/categories/new';
+
+  static const String adminCategoryEdit = 'admin_category_edit';
+  static const String adminCategoryEditPath = '/admin/catalog/categories/:id/edit';
+
+  static const String adminProductCreate = 'admin_product_create';
+  static const String adminProductCreatePath = '/admin/catalog/products/new';
+
+  static const String adminProductEdit = 'admin_product_edit';
+  static const String adminProductEditPath = '/admin/catalog/products/:id/edit';
+
   static const String adminInventory = 'admin_inventory';
   static const String adminInventoryPath = '/admin/inventory';
 

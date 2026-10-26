@@ -6,6 +6,7 @@ MOVEN is an existing single-store clothing e-commerce project. Inspect
 the repository before proposing changes; do not assume it is empty.
 
 Approved MVP stack: - Flutter Web / Dart - Riverpod and GoRouter -
+Freezed and json_serializable (via build_runner) for immutable models and state -
 Supabase Auth (email verification and password recovery) - PostgreSQL on
 Supabase - Supabase Storage - Trusted PostgreSQL functions/RPC and/or
 Supabase Edge Functions for sensitive business operations
@@ -72,6 +73,9 @@ Do not assume they exist just because they are named here.
 -   If a requirement is ambiguous, ask a focused question and wait.
 -   Prefer feature-first, practical code; avoid unnecessary Clean
     Architecture layers and unrelated refactors.
+-   Craft lively, visually engaging web interfaces: integrate smooth
+    Flutter animations, hover micro-interactions, responsive transitions,
+    and fluid state changes (150ms-350ms natural curves).
 -   Update docs when approved work changes architecture, schema,
     security, or business rules.
 -   Communicate plans and completion reports in Vietnamese. These rules

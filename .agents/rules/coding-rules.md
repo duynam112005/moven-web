@@ -22,6 +22,16 @@ trigger: model_decision
     formatter/linter settings.
 -   Build responsive desktop/tablet/mobile web layouts; do not assume a
     fixed viewport.
+-   Craft lively, visually engaging web interfaces with fluid animations
+    and micro-interactions. Prefer Flutter's built-in animated widgets
+    (`AnimatedContainer`, `AnimatedSwitcher`, `AnimatedCrossFade`,
+    `AnimatedOpacity`, `AnimatedSize`, `TweenAnimationBuilder`) and hover
+    feedback (`MouseRegion`, hover elevation/scale, interactive states).
+    Use smooth transitions for status changes, steppers, accordion/drawers,
+    tabs, and dialogs. Use shimmer/pulse effects for skeleton loading
+    states. Keep animation durations snappy (150ms-350ms) with natural
+    curves (`Curves.easeOutCubic`, `Curves.easeInOut`) to preserve web
+    responsiveness.
 -   Provide appropriate loading, empty, error, retry, and success
     states. Include accessible labels, focus behavior, contrast, and
     usable targets.
@@ -31,7 +41,11 @@ trigger: model_decision
     repository/provider pattern handles data access.
 -   Use typed models rather than raw maps throughout the UI. Handle
     nulls, parsing, time zones, pagination, and network errors
-    explicitly.
+    explicitly. Use `freezed` (`@freezed`) and `json_serializable` for
+    immutable data models, domain entities, and complex UI states,
+    declaring `part '<filename>.freezed.dart';` and `part '<filename>.g.dart';`.
+    Generate code using `dart run build_runner build --delete-conflicting-outputs`
+    (obtaining approval before running the terminal command).
 -   Distinguish validation, authorization, network, stock/availability,
     and server errors where useful.
 -   Client route guards are UX only; backend authorization remains
@@ -40,6 +54,6 @@ trigger: model_decision
 -   Do not log passwords, tokens, secrets, or unnecessary personal
     information.
 -   Add/update tests for changed behavior. Never hand-edit generated
-    files; inspect the repository's generation workflow first.
+    files (`*.freezed.dart`, `*.g.dart`); inspect the repository's generation workflow first.
 -   Do not run formatter, analyzer, test, build, or code-generation
     commands until the user has approved each terminal command.
