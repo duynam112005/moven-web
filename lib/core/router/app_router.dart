@@ -16,6 +16,9 @@ import '../../features/checkout/presentation/checkout_screen.dart';
 import '../../features/catalog/presentation/catalog_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/home/presentation/widgets/storefront_shell.dart';
+import '../../features/orders/presentation/admin/admin_orders_screen.dart';
+import '../../features/orders/presentation/customer/order_detail_screen.dart';
+import '../../features/orders/presentation/customer/orders_screen.dart';
 import '../../features/product_detail/presentation/product_detail_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/static_pages/presentation/static_page_screen.dart';
@@ -131,12 +134,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: RouteNames.ordersPath,
             name: RouteNames.orders,
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: EmptyStateView(
-                icon: Icons.receipt_long_outlined,
-                title: 'Đơn hàng của bạn',
-                description: 'Theo dõi đơn hàng COD tại đây.',
-              ),
+              child: OrdersScreen(),
             ),
+          ),
+          GoRoute(
+            path: RouteNames.orderDetailPath,
+            name: RouteNames.orderDetail,
+            pageBuilder: (context, state) {
+              final code = state.pathParameters['code'] ?? '';
+              return NoTransitionPage(
+                child: OrderDetailScreen(orderCode: code),
+              );
+            },
           ),
           GoRoute(
             path: RouteNames.profilePath,
@@ -230,11 +239,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: RouteNames.adminOrdersPath,
             name: RouteNames.adminOrders,
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: EmptyStateView(
-                icon: Icons.receipt_long_outlined,
-                title: 'Quản lý Đơn hàng & Vận chuyển',
-                description: 'Cập nhật trạng thái thủ công: shipping, delivery_failed, delivered, returned.',
-              ),
+              child: AdminOrdersScreen(),
             ),
           ),
           GoRoute(
