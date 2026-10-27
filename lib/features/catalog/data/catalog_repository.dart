@@ -21,6 +21,10 @@ class CatalogRepository {
 
   CatalogRepository(this._client);
 
+  static final RegExp _uuidRegex = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  );
+
   static const String _productSelectQuery = '''
     *,
     categories (*),
@@ -308,6 +312,24 @@ class CatalogRepository {
     }
   }
 
+  /// Tra cứu Category ID theo slug (hỗ trợ cả mock offline và Supabase database)
+  Future<String?> _getCategoryIdBySlug(String slug) async {
+    for (final cat in _mockCategories) {
+      if (cat.slug == slug) return cat.id;
+    }
+    try {
+      final res = await _client
+          .from('categories')
+          .select('id')
+          .eq('slug', slug)
+          .maybeSingle();
+      if (res != null && res['id'] != null) {
+        return res['id'] as String;
+      }
+    } catch (_) {}
+    return null;
+  }
+
   /// Truy vấn sản phẩm theo bộ lọc và phân trang cho Catalog
   Future<PaginatedResult<Product>> getProducts({
     CatalogFilter filter = const CatalogFilter(),
@@ -323,9 +345,39 @@ class CatalogRepository {
           .select(_productSelectQuery)
           .eq('is_active', true);
 
-      // Lọc theo Category ID hoặc Category Slug
+      // Lọc theo Category ID hoặc Category Slug (an toàn với PostgreSQL UUID)
+      String? targetCategoryId;
       if (filter.categoryId != null && filter.categoryId!.isNotEmpty) {
-        query = query.eq('category_id', filter.categoryId!);
+        if (_uuidRegex.hasMatch(filter.categoryId!)) {
+          targetCategoryId = filter.categoryId;
+        } else {
+          // filter.categoryId truyền vào thực chất là slug
+          targetCategoryId = await _getCategoryIdBySlug(filter.categoryId!);
+          if (targetCategoryId == null) {
+            return PaginatedResult<Product>(
+              items: const [],
+              totalCount: 0,
+              page: page,
+              pageSize: pageSize,
+            );
+          }
+        }
+      } else if (filter.categorySlug != null && filter.categorySlug!.isNotEmpty) {
+        targetCategoryId = await _getCategoryIdBySlug(filter.categorySlug!);
+        if (targetCategoryId == null) {
+          return PaginatedResult<Product>(
+            items: const [],
+            totalCount: 0,
+            page: page,
+            pageSize: pageSize,
+          );
+        }
+      }
+
+      if (targetCategoryId != null &&
+          targetCategoryId.isNotEmpty &&
+          _uuidRegex.hasMatch(targetCategoryId)) {
+        query = query.eq('category_id', targetCategoryId);
       }
 
       // Lọc theo đối tượng (men, women, unisex)

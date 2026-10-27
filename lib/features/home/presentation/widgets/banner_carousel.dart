@@ -60,13 +60,23 @@ class _BannerCarouselState extends ConsumerState<BannerCarousel> {
         break;
       case 'category':
         if (banner.linkValue != null && banner.linkValue!.isNotEmpty) {
+          final isUuid = RegExp(
+            r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+          ).hasMatch(banner.linkValue!);
+          ref.read(catalogFilterProvider.notifier).state = isUuid
+              ? CatalogFilter(categoryId: banner.linkValue)
+              : CatalogFilter(categorySlug: banner.linkValue);
+        } else {
           ref.read(catalogFilterProvider.notifier).state =
-              CatalogFilter(categoryId: banner.linkValue);
+              const CatalogFilter();
         }
+        ref.read(catalogPageProvider.notifier).state = 1;
         context.goNamed(RouteNames.catalog);
         break;
       case 'none':
       default:
+        ref.read(catalogFilterProvider.notifier).state = const CatalogFilter();
+        ref.read(catalogPageProvider.notifier).state = 1;
         context.goNamed(RouteNames.catalog);
         break;
     }
