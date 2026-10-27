@@ -197,10 +197,7 @@ class ReviewsRepository {
       return list;
     } catch (e) {
       if (kDebugMode) debugPrint('[ReviewsRepository] getProductReviews error: $e');
-      return _mockReviews
-          .where((r) => r.productId == productId && !r.isHidden)
-          .toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return const [];
     }
   }
 
@@ -487,7 +484,7 @@ class ReviewsRepository {
       return list;
     } catch (e) {
       if (kDebugMode) debugPrint('[ReviewsRepository] getAdminReviews error: $e');
-      return _mockReviews;
+      return const [];
     }
   }
 
@@ -532,7 +529,7 @@ class ReviewsRepository {
 
       final response = await query.order('created_at', ascending: false);
 
-      return (response as List).map((row) {
+      final reports = (response as List).map((row) {
         final reporter = row['profiles'] as Map<String, dynamic>?;
         final review = row['reviews'] as Map<String, dynamic>?;
         final author = review?['profiles'] as Map<String, dynamic>?;
@@ -559,9 +556,11 @@ class ReviewsRepository {
           createdAt: DateTime.parse(row['created_at'] as String),
         );
       }).toList();
+
+      return reports;
     } catch (e) {
       if (kDebugMode) debugPrint('[ReviewsRepository] getAdminReports error: $e');
-      return _mockReports;
+      return const [];
     }
   }
 
