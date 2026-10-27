@@ -321,7 +321,7 @@ class OrdersRepository {
           .range(offset, offset + limit - 1);
 
       final list = (response as List<dynamic>)
-          .map((data) => Order.fromJson(data as Map<String, dynamic>))
+          .map((data) => Order.fromJson(_normalizeMap(data)))
           .toList();
 
       return list;
@@ -357,7 +357,7 @@ class OrdersRepository {
         throw NotFoundException('Không tìm thấy đơn hàng với mã $orderCode');
       }
 
-      return Order.fromJson(response);
+      return Order.fromJson(_normalizeMap(response));
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException('Lỗi tải thông tin đơn hàng: $e');
@@ -477,7 +477,7 @@ class OrdersRepository {
           .range(offset, offset + limit - 1);
 
       final list = (response as List<dynamic>)
-          .map((data) => Order.fromJson(data as Map<String, dynamic>))
+          .map((data) => Order.fromJson(_normalizeMap(data)))
           .toList();
 
       return list;
@@ -577,5 +577,21 @@ class OrdersRepository {
       if (e is AppException) rethrow;
       throw ServerException('Không thể cập nhật trạng thái thanh toán: $e');
     }
+  }
+
+  /// Chuẩn hoá đệ quy dữ liệu JSON từ Supabase (tránh lỗi TypeError trên Flutter Web)
+  static Map<String, dynamic> _normalizeMap(dynamic map) {
+    if (map is! Map) return <String, dynamic>{};
+    return map.map((key, value) {
+      if (value is Map) {
+        return MapEntry(key.toString(), _normalizeMap(value));
+      } else if (value is List) {
+        return MapEntry(
+          key.toString(),
+          value.map((e) => e is Map ? _normalizeMap(e) : e).toList(),
+        );
+      }
+      return MapEntry(key.toString(), value);
+    });
   }
 }

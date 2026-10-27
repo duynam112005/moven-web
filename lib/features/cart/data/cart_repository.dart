@@ -82,7 +82,7 @@ class CartRepository {
           .order('created_at', ascending: false);
 
       final list = (response as List<dynamic>).map((item) {
-        return CartItemModel.fromJson(item as Map<String, dynamic>);
+        return CartItemModel.fromJson(Map<String, dynamic>.from(item as Map));
       }).toList();
 
       return list;
