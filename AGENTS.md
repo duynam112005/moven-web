@@ -83,3 +83,14 @@ Do not assume they exist just because they are named here.
     may be Vietnamese or bilingual.
 -   Report only tests/checks actually run, their real results, and
     checks not run. Never claim a check passed without executing it.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues for `duynam112005/moven-web`. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context layout (`GLOSSARY.md` + `docs/adr/`). See `docs/agents/domain.md`.
+
