@@ -143,7 +143,7 @@ class StorefrontShell extends ConsumerWidget {
                           );
                         },
                       ),
-
+                      const SizedBox(width: AppDimensions.space8),
                       // Nút truy cập nhanh Trang quản trị cho Admin
                       if (isAuthenticated && isAdmin && isDesktop) ...[
                         OutlinedButton.icon(
