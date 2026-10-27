@@ -6,6 +6,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_dimensions.dart';
+import '../../../../core/constants/app_typography.dart';
+import '../../../../core/widgets/app_button.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../features/catalog/data/catalog_providers.dart';
 import '../../../../features/catalog/data/catalog_repository.dart';
@@ -40,42 +44,106 @@ class _AdminCatalogScreenState extends ConsumerState<AdminCatalogScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Quản trị Catalog'),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Danh mục'),
-            Tab(text: 'Sản phẩm'),
+      backgroundColor: Colors.transparent,
+      body: Padding(
+        padding: const EdgeInsets.all(AppDimensions.space24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 1. Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Quản trị Catalog',
+                        style: AppTypography.headlineMedium,
+                      ),
+                      const SizedBox(height: AppDimensions.space4),
+                      Text(
+                        'Quản lý danh mục phân loại, thêm mới và cập nhật sản phẩm cùng các biến thể',
+                        style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: AppDimensions.space16),
+                Row(
+                  children: [
+                    AppButton(
+                      label: 'Thêm danh mục',
+                      icon: const Icon(Icons.create_new_folder_outlined, size: 18),
+                      variant: AppButtonVariant.outlined,
+                      onPressed: () => context.pushNamed(RouteNames.adminCategoryCreate),
+                    ),
+                    const SizedBox(width: AppDimensions.space12),
+                    AppButton(
+                      label: 'Thêm sản phẩm',
+                      icon: const Icon(Icons.add, size: 18),
+                      onPressed: () => context.pushNamed(RouteNames.adminProductCreate),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+
+            const SizedBox(height: AppDimensions.space20),
+
+            // 2. Tab Bar
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(AppDimensions.radius8),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: TabBar(
+                controller: _tabController,
+                labelColor: AppColors.primary,
+                unselectedLabelColor: AppColors.textSecondary,
+                indicatorColor: AppColors.primary,
+                indicatorWeight: 3,
+                labelStyle: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
+                tabs: const [
+                  Tab(
+                    icon: Icon(Icons.category_outlined, size: 20),
+                    text: 'Danh mục',
+                  ),
+                  Tab(
+                    icon: Icon(Icons.checkroom_outlined, size: 20),
+                    text: 'Sản phẩm',
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: AppDimensions.space16),
+
+            // 3. Tab Views
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _CategoryTab(key: const ValueKey('cat_tab')),
+                  _ProductTab(key: const ValueKey('prod_tab')),
+                ],
+              ),
+            ),
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _CategoryTab(key: const ValueKey('cat_tab')),
-          _ProductTab(key: const ValueKey('prod_tab')),
-        ],
-      ),
-      floatingActionButton: AnimatedBuilder(
-        animation: _tabController,
-        builder: (context, _) {
-          return FloatingActionButton.extended(
-            onPressed: () {
-              if (_tabController.index == 0) {
-                // Navigate to create category
-                context.pushNamed(RouteNames.adminCategoryCreate);
-              } else {
-                // Navigate to create product
-                context.pushNamed(RouteNames.adminProductCreate);
-              }
-            },
-            icon: const Icon(Icons.add),
-            label: Text(
-              _tabController.index == 0 ? 'Thêm danh mục' : 'Thêm sản phẩm',
-            ),
-          );
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          if (_tabController.index == 0) {
+            context.pushNamed(RouteNames.adminCategoryCreate);
+          } else {
+            context.pushNamed(RouteNames.adminProductCreate);
+          }
         },
+        icon: const Icon(Icons.add),
+        label: Text(_tabController.index == 0 ? 'Thêm danh mục' : 'Thêm sản phẩm'),
       ),
     );
   }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/errors/app_exception.dart';
 import '../domain/models/order.dart';
@@ -289,7 +290,6 @@ class OrdersRepository {
   }) async {
     final client = _client;
     if (client == null) {
-      // Fallback Mock Data
       var list = List<Order>.from(_mockOrders);
       if (statusFilter != null) {
         list = list.where((o) => o.status == statusFilter).toList();
@@ -476,12 +476,14 @@ class OrdersRepository {
           .order('created_at', ascending: false)
           .range(offset, offset + limit - 1);
 
-      return (response as List<dynamic>)
+      final list = (response as List<dynamic>)
           .map((data) => Order.fromJson(data as Map<String, dynamic>))
           .toList();
+
+      return list;
     } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException('Không thể tải danh sách đơn hàng admin: $e');
+      if (kDebugMode) debugPrint('[OrdersRepository] getAdminOrders error: $e');
+      return const [];
     }
   }
 

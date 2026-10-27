@@ -7,6 +7,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_dimensions.dart';
+import '../../../../core/constants/app_typography.dart';
+import '../../../../core/widgets/app_button.dart';
 import '../../../../features/catalog/data/catalog_providers.dart';
 import '../../../../features/catalog/data/catalog_repository.dart';
 import '../../../../features/catalog/data/storage_repository.dart';
@@ -24,38 +28,80 @@ class AdminBannerScreen extends ConsumerWidget {
     final bannersAsync = ref.watch(adminBannersProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Quản trị Banner')),
-      body: bannersAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
-              const SizedBox(height: 8),
-              Text('Không tải được banner: $e'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => ref.refresh(adminBannersProvider),
-                child: const Text('Thử lại'),
-              ),
-            ],
-          ),
-        ),
-        data: (banners) {
-          if (banners.isEmpty) {
-            return const Center(child: Text('Chưa có banner nào'));
-          }
-          return RefreshIndicator(
-            onRefresh: () async => ref.refresh(adminBannersProvider),
-            child: ListView.separated(
-              padding: const EdgeInsets.all(12),
-              itemCount: banners.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, i) => _BannerCard(banner: banners[i]),
+      backgroundColor: Colors.transparent,
+      body: Padding(
+        padding: const EdgeInsets.all(AppDimensions.space24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 1. Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Quản trị Banner',
+                        style: AppTypography.headlineMedium,
+                      ),
+                      const SizedBox(height: AppDimensions.space4),
+                      Text(
+                        'Cấu hình banner trình chiếu trang chủ, lịch hiển thị và liên kết đích',
+                        style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: AppDimensions.space16),
+                AppButton(
+                  label: 'Tạo banner mới',
+                  icon: const Icon(Icons.add, size: 18),
+                  onPressed: () => _showBannerDialog(context, ref, null),
+                ),
+              ],
             ),
-          );
-        },
+
+            const SizedBox(height: AppDimensions.space20),
+
+            // 2. Banner List
+            Expanded(
+              child: bannersAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                      const SizedBox(height: 8),
+                      Text('Không tải được banner: $e'),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () => ref.refresh(adminBannersProvider),
+                        child: const Text('Thử lại'),
+                      ),
+                    ],
+                  ),
+                ),
+                data: (banners) {
+                  if (banners.isEmpty) {
+                    return const Center(child: Text('Chưa có banner nào'));
+                  }
+                  return RefreshIndicator(
+                    onRefresh: () async => ref.refresh(adminBannersProvider),
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: banners.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, i) => _BannerCard(banner: banners[i]),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showBannerDialog(context, ref, null),

@@ -17,7 +17,8 @@ class AppConfig {
   /// Anon Key công khai của Supabase (an toàn trên client khi kết hợp RLS)
   static const String supabaseAnonKey = String.fromEnvironment(
     'SUPABASE_ANON_KEY',
-    defaultValue: 'sb_publishable_LT7sT_PZATz4_uXLJJr5Sg_2RViRiq5',
+    defaultValue:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl1dGN5YmJ5YXdqbHpxcGxibmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4NDk2OTYsImV4cCI6MjEwODQyNTY5Nn0.BRLebpX2ieICP5RwkbjFEzT4UG7VMjyEWPkjBpeh7bc',
   );
 
   /// Môi trường thực thi: 'development', 'staging', 'production'

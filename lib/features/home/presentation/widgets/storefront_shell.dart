@@ -32,6 +32,7 @@ class StorefrontShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isAuthenticated = ref.watch(isAuthenticatedProvider);
+    final isAdmin = ref.watch(isAdminProvider);
     final isDesktop = context.isDesktop;
     final currentPath = _getCurrentPath(context);
 
@@ -143,7 +144,23 @@ class StorefrontShell extends ConsumerWidget {
                         },
                       ),
 
-                      const SizedBox(width: AppDimensions.space8),
+                      // Nút truy cập nhanh Trang quản trị cho Admin
+                      if (isAuthenticated && isAdmin && isDesktop) ...[
+                        OutlinedButton.icon(
+                          onPressed: () => context.go(RouteNames.adminDashboardPath),
+                          icon: const Icon(Icons.dashboard_outlined, size: 16),
+                          label: const Text('Trang quản trị', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                            side: const BorderSide(color: AppColors.primary),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppDimensions.space12,
+                              vertical: AppDimensions.space8,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppDimensions.space8),
+                      ],
 
                       // Auth / Profile Button
                       if (isAuthenticated)
@@ -181,6 +198,7 @@ class StorefrontShell extends ConsumerWidget {
 
   Widget _buildUserMenu(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(userProfileProvider);
+    final isAdmin = ref.watch(isAdminProvider);
     final displayName = profileAsync.value?.fullName ?? '';
     final initial =
         displayName.isNotEmpty ? displayName[0].toUpperCase() : '?';
@@ -189,13 +207,15 @@ class StorefrontShell extends ConsumerWidget {
       tooltip: 'Tài khoản',
       offset: const Offset(0, 40),
       onSelected: (value) async {
-        if (value == 'profile') {
+        if (value == 'admin') {
+          context.go(RouteNames.adminDashboardPath);
+        } else if (value == 'profile') {
           context.goNamed(RouteNames.profile);
         } else if (value == 'logout') {
+          if (context.mounted) context.go(RouteNames.homePath);
           try {
             await ref.read(authRepositoryProvider).signOut();
             ref.invalidate(userProfileProvider);
-            if (context.mounted) context.go(RouteNames.homePath);
           } catch (_) {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -209,15 +229,57 @@ class StorefrontShell extends ConsumerWidget {
       itemBuilder: (_) => [
         PopupMenuItem(
           enabled: false,
-          child: Text(
-            displayName.isNotEmpty ? displayName : 'Tài khoản',
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  displayName.isNotEmpty ? displayName : 'Tài khoản',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (isAdmin)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    'ADMIN',
+                    style: TextStyle(
+                      color: AppColors.onPrimary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
         const PopupMenuDivider(),
+        if (isAdmin) ...[
+          const PopupMenuItem(
+            value: 'admin',
+            child: Row(
+              children: [
+                Icon(Icons.dashboard_outlined, size: 18, color: AppColors.primary),
+                SizedBox(width: 8),
+                Text(
+                  'Trang quản trị (Admin)',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const PopupMenuDivider(),
+        ],
         const PopupMenuItem(
           value: 'profile',
           child: Row(

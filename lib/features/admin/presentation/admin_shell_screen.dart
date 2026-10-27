@@ -35,9 +35,11 @@ class AdminShellScreen extends ConsumerWidget {
                   right: BorderSide(color: Color(0xFF374151)),
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              child: Material(
+                color: Colors.transparent,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                   // Sidebar Header
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -147,12 +149,15 @@ class AdminShellScreen extends ConsumerWidget {
                               color: AppColors.onPrimary,
                             ),
                             SizedBox(width: AppDimensions.space12),
-                            Text(
-                              'Về trang bán hàng',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.onPrimary,
+                            Expanded(
+                              child: Text(
+                                'Về trang bán hàng',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.onPrimary,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -163,6 +168,7 @@ class AdminShellScreen extends ConsumerWidget {
                 ],
               ),
             ),
+          ),
 
           // Main Content Area
           Expanded(
@@ -200,14 +206,15 @@ class AdminShellScreen extends ConsumerWidget {
                         tooltip: 'Đăng xuất',
                         icon: const Icon(Icons.logout, size: 20),
                         onPressed: () async {
-                          // Đăng xuất và điều hướng về Storefront
+                          // Điều hướng an toàn về Trang chủ trước khi xóa phiên đăng nhập
+                          // Tránh việc GoRouter thấy route /admin chưa đăng nhập rồi tự động đẩy vào /login?redirect=/admin
+                          if (context.mounted) {
+                            context.go(RouteNames.homePath);
+                          }
                           try {
                             await ref.read(authRepositoryProvider).signOut();
                           } catch (_) {}
                           ref.invalidate(userProfileProvider);
-                          if (context.mounted) {
-                            context.goNamed(RouteNames.home);
-                          }
                         },
                       ),
                     ],
@@ -216,10 +223,7 @@ class AdminShellScreen extends ConsumerWidget {
 
                 // Page Body
                 Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(AppDimensions.space24),
-                    child: child,
-                  ),
+                  child: child,
                 ),
               ],
             ),
@@ -235,7 +239,10 @@ class AdminShellScreen extends ConsumerWidget {
     required String label,
     required String route,
   }) {
-    final currentRoute = GoRouterState.of(context).matchedLocation;
+    String currentRoute = '';
+    try {
+      currentRoute = GoRouterState.of(context).matchedLocation;
+    } catch (_) {}
     final isSelected = currentRoute == route;
 
     return Padding(

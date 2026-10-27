@@ -7,6 +7,7 @@ import '../../features/admin/presentation/banners/admin_banner_screen.dart';
 import '../../features/admin/presentation/catalog/admin_catalog_screen.dart';
 import '../../features/admin/presentation/catalog/admin_category_form_screen.dart';
 import '../../features/admin/presentation/catalog/admin_product_form_screen.dart';
+import '../../features/admin/presentation/inventory/admin_inventory_screen.dart';
 import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
@@ -19,11 +20,12 @@ import '../../features/home/presentation/widgets/storefront_shell.dart';
 import '../../features/orders/presentation/admin/admin_orders_screen.dart';
 import '../../features/orders/presentation/customer/order_detail_screen.dart';
 import '../../features/orders/presentation/customer/orders_screen.dart';
+import '../../features/admin/presentation/reviews/admin_reviews_screen.dart';
+import '../../features/admin/presentation/settings/admin_settings_screen.dart';
 import '../../features/product_detail/presentation/product_detail_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/static_pages/presentation/static_page_screen.dart';
 import '../network/supabase_client.dart';
-import '../widgets/empty_state_view.dart';
 import '../widgets/not_found_screen.dart';
 import 'route_names.dart';
 import 'router_notifier.dart';
@@ -52,13 +54,35 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           location.startsWith(RouteNames.ordersPath) ||
           location == RouteNames.profilePath ||
           location == RouteNames.addressesPath;
+      final isAuthRoute = location == RouteNames.loginPath ||
+          location == RouteNames.registerPath ||
+          location == RouteNames.forgotPasswordPath;
 
-      // Bảo vệ Admin routes: nếu không phải Admin, chuyển hướng về Login
-      if (isAdminRoute && !isAdmin) {
-        return '${RouteNames.loginPath}?redirect=${Uri.encodeComponent(location)}';
+      // 1. Nếu đã đăng nhập mà truy cập trang auth (/login, /register, /forgot-password)
+      if (isAuthRoute && isAuthenticated) {
+        return isAdmin ? RouteNames.adminDashboardPath : RouteNames.homePath;
       }
 
-      // Bảo vệ Customer routes: nếu chưa đăng nhập, chuyển hướng về Login
+      // 2. Bảo vệ Admin routes:
+      if (isAdminRoute) {
+        // Nếu user đã xác thực nhưng profile đang load (ví dụ F5 trên web),
+        // giữ nguyên vị trí để không bị đá văng về login khi profile chưa load kịp
+        final isProfileLoading = isAuthenticated && ref.read(userProfileProvider).isLoading;
+        if (isProfileLoading) {
+          return null;
+        }
+
+        if (!isAdmin) {
+          // Nếu đã đăng nhập với vai trò khách hàng -> chuyển về trang chủ, tránh vòng lặp
+          if (isAuthenticated) {
+            return RouteNames.homePath;
+          }
+          // Chưa đăng nhập -> chuyển đến Login kèm redirect
+          return '${RouteNames.loginPath}?redirect=${Uri.encodeComponent(location)}';
+        }
+      }
+
+      // 3. Bảo vệ Customer routes: nếu chưa đăng nhập, chuyển hướng về Login
       if (isCustomerProtectedRoute && !isAuthenticated) {
         return '${RouteNames.loginPath}?redirect=${Uri.encodeComponent(location)}';
       }
@@ -228,11 +252,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: RouteNames.adminInventoryPath,
             name: RouteNames.adminInventory,
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: EmptyStateView(
-                icon: Icons.inventory_2_outlined,
-                title: 'Quản lý Tồn kho & Biến động',
-                description: 'Điều chỉnh tồn kho và audit inventory_movements.',
-              ),
+              child: AdminInventoryScreen(),
             ),
           ),
           GoRoute(
@@ -253,22 +273,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: RouteNames.adminReviewsPath,
             name: RouteNames.adminReviews,
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: EmptyStateView(
-                icon: Icons.rate_review_outlined,
-                title: 'Kiểm duyệt Đánh giá & Báo cáo',
-                description: 'Xử lý báo cáo và ẩn/khôi phục đánh giá sản phẩm.',
-              ),
+              child: AdminReviewsScreen(),
             ),
           ),
           GoRoute(
             path: RouteNames.adminSettingsPath,
             name: RouteNames.adminSettings,
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: EmptyStateView(
-                icon: Icons.settings_outlined,
-                title: 'Cài đặt Cửa hàng',
-                description: 'Cấu hình phí ship mặc định và ngưỡng cảnh báo low-stock.',
-              ),
+              child: AdminSettingsScreen(),
             ),
           ),
         ],
