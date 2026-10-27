@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../network/supabase_client.dart';
@@ -12,7 +13,11 @@ class RouterNotifier extends ChangeNotifier {
   final Ref _ref;
 
   RouterNotifier(this._ref) {
-    _ref.listen(authStateChangesProvider, (_, __) => notifyListeners());
-    _ref.listen(userRoleProvider, (_, __) => notifyListeners());
+    _ref.listen(authStateChangesProvider, (_, __) {
+      scheduleMicrotask(notifyListeners);
+    });
+    _ref.listen(userRoleProvider, (_, __) {
+      scheduleMicrotask(notifyListeners);
+    });
   }
 }

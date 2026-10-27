@@ -49,12 +49,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
-      // Đọc role từ DB (trusted) để quyết định routing
-      final isAdmin = ref.read(isAdminProvider);
-      final target = isAdmin
-          ? RouteNames.adminDashboardPath
-          : (widget.redirectPath ?? RouteNames.homePath);
-      context.go(target);
+      // Đợi profile nạp xong từ DB (trusted) để nhận diện chính xác role admin
+      try {
+        final profile = await ref.read(userProfileProvider.future);
+        if (!mounted) return;
+        final isAdmin = profile?.role == 'admin';
+        String target;
+        if (isAdmin) {
+          target = widget.redirectPath != null && widget.redirectPath!.startsWith('/admin')
+              ? widget.redirectPath!
+              : RouteNames.adminDashboardPath;
+        } else {
+          final redirect = widget.redirectPath;
+          // Khách hàng không chuyển hướng vào route admin để tránh vòng lặp
+          target = (redirect != null && !redirect.startsWith('/admin'))
+              ? redirect
+              : RouteNames.homePath;
+        }
+        context.go(target);
+      } catch (_) {
+        if (!mounted) return;
+        final redirect = widget.redirectPath;
+        final target = (redirect != null && !redirect.startsWith('/admin'))
+            ? redirect
+            : RouteNames.homePath;
+        context.go(target);
+      }
     } else {
       final authState = ref.read(authControllerProvider);
       setState(() {

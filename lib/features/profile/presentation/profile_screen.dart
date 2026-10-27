@@ -103,10 +103,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _signOut() async {
+    if (mounted) context.go(RouteNames.homePath);
     try {
       await ref.read(authRepositoryProvider).signOut();
       ref.invalidate(userProfileProvider);
-      if (mounted) context.go(RouteNames.homePath);
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
