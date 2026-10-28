@@ -4,7 +4,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../core/router/route_names.dart';
 import '../../../../features/catalog/data/catalog_providers.dart';
 import '../../../../features/catalog/data/catalog_repository.dart';
 import '../../../../features/catalog/domain/models/product.dart';
@@ -180,12 +182,69 @@ class _AdminProductFormScreenState
             content: Text(_isEditing ? 'Đã cập nhật sản phẩm' : 'Đã tạo sản phẩm'),
           ),
         );
-        Navigator.of(context).pop();
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go('${RouteNames.adminCatalogPath}?tab=products');
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Xóa sản phẩm'),
+        content: Text('Bạn có chắc chắn muốn xóa sản phẩm "${_nameCtrl.text}" không? Thao tác này không thể hoàn tác.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Hủy'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Xóa', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _loading = true);
+    try {
+      await ref.read(catalogRepositoryProvider).deleteProduct(widget.productId!);
+      ref.invalidate(adminProductsProvider);
+      ref.invalidate(catalogProductsProvider);
+      ref.invalidate(featuredProductsProvider);
+      ref.invalidate(activeCategoriesProvider);
+      if (_original != null) {
+        ref.invalidate(productDetailProvider(_original!.slug));
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã xóa sản phẩm thành công')),
+        );
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go('${RouteNames.adminCatalogPath}?tab=products');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi: $e')),
+        );
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -213,6 +272,12 @@ class _AdminProductFormScreenState
       appBar: AppBar(
         title: Text(_isEditing ? 'Chỉnh sửa sản phẩm' : 'Tạo sản phẩm mới'),
         actions: [
+          if (_isEditing)
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              tooltip: 'Xóa sản phẩm',
+              onPressed: _loading ? null : _confirmDelete,
+            ),
           if (_loading)
             const Padding(
               padding: EdgeInsets.all(16),

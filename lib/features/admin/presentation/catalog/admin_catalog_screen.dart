@@ -35,6 +35,19 @@ class _AdminCatalogScreenState extends ConsumerState<AdminCatalogScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    try {
+      final tab = GoRouterState.of(context).uri.queryParameters['tab'];
+      if (tab == 'products' || tab == '1') {
+        if (_tabController.index != 1) {
+          _tabController.animateTo(1);
+        }
+      }
+    } catch (_) {}
+  }
+
+  @override
   void dispose() {
     _tabController.dispose();
     _productSearchCtrl.dispose();
@@ -462,10 +475,57 @@ class _ProductCard extends ConsumerWidget {
                 );
               },
             ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              tooltip: 'Xóa',
+              onPressed: () => _confirmDelete(context, ref),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Xóa sản phẩm'),
+        content: Text('Bạn có chắc chắn muốn xóa sản phẩm "${product.name}" không? Thao tác này không thể hoàn tác.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Hủy'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Xóa', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await ref.read(catalogRepositoryProvider).deleteProduct(product.id);
+      ref.invalidate(adminProductsProvider);
+      ref.invalidate(catalogProductsProvider);
+      ref.invalidate(featuredProductsProvider);
+      ref.invalidate(activeCategoriesProvider);
+      ref.invalidate(productDetailProvider(product.slug));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã xóa sản phẩm thành công')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi: $e')),
+        );
+      }
+    }
   }
 
   String _fmt(int price) {

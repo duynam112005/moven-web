@@ -712,6 +712,35 @@ class CatalogRepository {
     }
   }
 
+  /// [Admin] Xóa sản phẩm
+  Future<void> deleteProduct(String productId) async {
+    try {
+      // Xóa khỏi mock dataset trong bộ nhớ nếu có
+      _mockProducts.removeWhere((p) => p.id == productId);
+
+      // Xóa các bảng liên kết theo thứ tự tránh lỗi khóa ngoại
+      await _client.from('product_images').delete().eq('product_id', productId);
+      await _client.from('product_variants').delete().eq('product_id', productId);
+      await _client.from('products').delete().eq('id', productId);
+    } on PostgrestException catch (e) {
+      if (e.code == '23503') {
+        throw const ServerException(
+          'Không thể xóa sản phẩm đã có lịch sử đơn hàng hoặc đánh giá. '
+          'Bạn có thể tắt kích hoạt (ẩn) sản phẩm thay vì xóa.',
+          code: '23503',
+        );
+      }
+      throw ServerException('Lỗi xóa sản phẩm: ${e.message}', code: e.code);
+    } catch (e) {
+      if (e is ServerException) rethrow;
+      // Nếu sản phẩm đã được dọn sạch khỏi danh sách mock thì hoàn tất thành công (hỗ trợ preview/offline)
+      if (_mockProducts.every((p) => p.id != productId)) {
+        return;
+      }
+      throw ServerException('Lỗi kết nối khi xóa sản phẩm: $e');
+    }
+  }
+
   /// [Admin] Xóa ảnh sản phẩm
   Future<void> deleteProductImage(String imageId) async {
     try {

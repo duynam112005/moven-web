@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moven/features/catalog/data/catalog_providers.dart';
+import 'package:moven/features/catalog/data/catalog_repository.dart';
 import 'package:moven/features/catalog/data/storage_repository.dart';
 import 'package:moven/features/catalog/domain/models/category.dart';
 import 'package:moven/features/catalog/domain/models/paginated_result.dart';
@@ -42,6 +43,18 @@ class FakeStorageRepository implements StorageRepository {
     required String bucket,
     required String path,
   }) async {}
+}
+
+class FakeCatalogRepository implements CatalogRepository {
+  String? lastDeletedProductId;
+
+  @override
+  Future<void> deleteProduct(String productId) async {
+    lastDeletedProductId = productId;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 void main() {
@@ -94,25 +107,32 @@ void main() {
     ),
   ];
 
-  Widget buildTestWidget() {
-    return ProviderScope(
-      overrides: [
-        storageRepositoryProvider.overrideWithValue(FakeStorageRepository()),
-        adminCategoriesProvider.overrideWith((ref) async => testCategories),
-        adminProductsProvider.overrideWith((ref, query) async {
-          return PaginatedResult<Product>(
-            items: testProducts,
-            totalCount: testProducts.length,
-            page: 1,
-            pageSize: 20,
-          );
-        }),
-      ],
-      child: const MaterialApp(
-        home: AdminCatalogScreen(),
-      ),
-    );
-  }
+    late FakeCatalogRepository fakeCatalogRepo;
+
+    setUp(() {
+      fakeCatalogRepo = FakeCatalogRepository();
+    });
+
+    Widget buildTestWidget() {
+      return ProviderScope(
+        overrides: [
+          catalogRepositoryProvider.overrideWithValue(fakeCatalogRepo),
+          storageRepositoryProvider.overrideWithValue(FakeStorageRepository()),
+          adminCategoriesProvider.overrideWith((ref) async => testCategories),
+          adminProductsProvider.overrideWith((ref, query) async {
+            return PaginatedResult<Product>(
+              items: testProducts,
+              totalCount: testProducts.length,
+              page: 1,
+              pageSize: 20,
+            );
+          }),
+        ],
+        child: const MaterialApp(
+          home: AdminCatalogScreen(),
+        ),
+      );
+    }
 
   group('AdminCatalogScreen Widget Tests', () {
     testWidgets('1. Hiển thị thanh tiêu đề AppBar và 2 tab Danh mục / Sản phẩm',
@@ -149,6 +169,47 @@ void main() {
       expect(find.byType(TextField), findsOneWidget);
       expect(find.text('Áo Thun MOVEN Basic'), findsOneWidget);
       expect(find.textContaining('250.000₫'), findsOneWidget);
+    });
+
+    testWidgets('4. Tab Sản phẩm hiển thị nút xóa, xác nhận xóa thành công và không bị trắng màn hình',
+        (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Chuyển sang Tab Sản phẩm
+      await tester.tap(find.text('Sản phẩm'));
+      await tester.pumpAndSettle();
+
+      // Kiểm tra có nút xóa (Icons.delete_outline)
+      final deleteBtn = find.byIcon(Icons.delete_outline);
+      expect(deleteBtn, findsOneWidget);
+
+      // Nhấn vào nút xóa
+      await tester.tap(deleteBtn);
+      await tester.pumpAndSettle();
+
+      // Kiểm tra dialog xác nhận xuất hiện
+      expect(find.text('Xóa sản phẩm'), findsOneWidget);
+      expect(
+        find.textContaining('Bạn có chắc chắn muốn xóa sản phẩm "Áo Thun MOVEN Basic" không?'),
+        findsOneWidget,
+      );
+      expect(find.text('Hủy'), findsOneWidget);
+      expect(find.text('Xóa'), findsOneWidget);
+
+      // Nhấn nút Xóa trên dialog
+      await tester.tap(find.text('Xóa'));
+      await tester.pumpAndSettle();
+
+      // Dialog đóng
+      expect(find.text('Xóa sản phẩm'), findsNothing);
+
+      // Màn hình KHÔNG bị trắng, giao diện Admin Catalog vẫn tồn tại nguyên vẹn
+      expect(find.text('Quản trị Catalog'), findsOneWidget);
+      expect(find.text('Sản phẩm'), findsOneWidget);
+
+      // Repository đã nhận đúng lệnh xóa sản phẩm id 'prod-1'
+      expect(fakeCatalogRepo.lastDeletedProductId, equals('prod-1'));
     });
   });
 }
