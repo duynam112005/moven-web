@@ -45,7 +45,7 @@ trigger: model_decision
     immutable data models, domain entities, and complex UI states,
     declaring `part '<filename>.freezed.dart';` and `part '<filename>.g.dart';`.
     Generate code using `dart run build_runner build --delete-conflicting-outputs`
-    (obtaining approval before running the terminal command).
+    only when it is included in an approved scoped work package.
 -   Distinguish validation, authorization, network, stock/availability,
     and server errors where useful.
 -   Client route guards are UX only; backend authorization remains
@@ -55,5 +55,5 @@ trigger: model_decision
     information.
 -   Add/update tests for changed behavior. Never hand-edit generated
     files (`*.freezed.dart`, `*.g.dart`); inspect the repository's generation workflow first.
--   Do not run formatter, analyzer, test, build, or code-generation
-    commands until the user has approved each terminal command.
+-   Run formatter, analyzer, test, build, or code-generation commands
+    only when they are included in an approved scoped work package.

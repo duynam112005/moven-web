@@ -6,25 +6,27 @@ trigger: always_on
 
 # MOVEN Workflow Rules
 
-## Approval before every change
+## Approval by scoped work package
 
--   Before every file change, even a small one, explain the objective,
-    files/areas, verification plan, and material risks. Wait for
-    explicit user approval.
--   Silence or approval for a different task is not permission for
-    additional changes.
--   For significant work, propose a plan and wait before implementation.
--   If ambiguous, ask a focused question and wait.
--   If code and specifications conflict, or specifications conflict with
-    one another, stop the affected work and ask the user before
-    proceeding.
+-   Before changing files, propose one clearly scoped work package:
+    objective, affected files/areas, verification plan, material risks,
+    and exclusions. Wait for explicit user approval.
+-   Once approved, make the related file changes and run the stated
+    read-only commands and relevant checks without seeking approval for
+    every file or command.
+-   A work-package approval does not authorize work outside its stated
+    scope, destructive actions, production actions, dependency/core
+    stack changes, or database writes.
+-   If a requirement is ambiguous, scope materially expands, or code
+    and specifications conflict, pause the affected work and ask.
 
 ## Terminal and Git
 
--   Before each terminal command, show the exact command and purpose;
-    wait for explicit approval for that command.
+-   Include the command categories and purposes in the approved work
+    package. Read-only inspection and the related verification commands
+    may run consecutively within that package.
 -   Do not hide commands in scripts, task runners, chained commands, or
-    automation to bypass approval.
+    automation to bypass the approved scope.
 -   Never execute Git commit, push, reset, rebase, branch deletion, or
     other history-destructive Git operations. You may propose commands,
     but do not execute them.
@@ -49,7 +51,8 @@ trigger: always_on
 -   Select checks relevant to the change: formatting, static analysis,
     unit/widget/integration tests, web build, migration validation, RLS
     tests, and/or manual responsive/security checks.
--   Obtain approval before each terminal command used for a check.
+-   Run only checks included in the approved work package; ask before
+    adding a materially different or potentially destructive check.
 -   Report only checks that actually ran and their observed results.
     List checks not run and why. Do not claim a build/test/security
     check passed based on inspection alone.

@@ -36,13 +36,11 @@ Antigravity rule files under `.agents/rules/` require valid YAML
 frontmatter with a supported `trigger`. Keep the four rule files
 directly in that folder.
 
-## Specification files
+## Documentation entry point
 
-When present, inspect current repository versions of `README.md`,
-`PROJECT_OVERVIEW.md`, `SRS.md`, `BUSINESS_FLOWS.md`,
-`DATABASE_SPEC.md`, `ERD.md`, `SECURITY_SPEC.md`, `ARCHITECTURE.md`,
-`IMPLEMENTATION_PLAN.md`, `OPEN_DECISIONS.md`, and `AI_BUILD_GUIDE.md`.
-Do not assume they exist just because they are named here.
+Read `docs/README.md` first, then select only the documents it maps to
+the task. Read the full specification set only for changes to
+architecture, schema, authorization, money, orders, or inventory.
 
 ## Conflicts and authority
 
@@ -60,12 +58,14 @@ Do not assume they exist just because they are named here.
 
 ## Working agreement
 
--   Before every proposed change, including small changes, explain the
-    objective, files/areas, verification plan, and material risks. Wait
-    for explicit approval.
--   Before every terminal command, show the exact command and purpose
-    and wait for explicit approval. Do not hide commands in scripts or
-    automation.
+-   Before a change, propose a clearly scoped work package: objective,
+    files/areas, verification plan, material risks, and exclusions.
+    Wait for explicit approval.
+-   An approved work package permits its related file changes,
+    read-only inspection, and stated verification commands without
+    per-file or per-command approval. Ask again before expanding scope,
+    performing destructive/production actions, database writes, or
+    changing dependencies or the core stack.
 -   Never execute Git commit, push, reset, rebase, branch deletion, or
     other history-destructive Git operations. You may propose commands
     but must not execute them.
@@ -93,4 +93,3 @@ GitHub Issues for `duynam112005/moven-web`. See `docs/agents/issue-tracker.md`.
 ### Domain docs
 
 Single-context layout (`GLOSSARY.md` + `docs/adr/`). See `docs/agents/domain.md`.
-

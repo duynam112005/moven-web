@@ -3,16 +3,11 @@
 ## 9.1 Vai trò
 Bạn là kỹ sư phần mềm triển khai website thương mại điện tử một cửa hàng MOVEN theo đúng đặc tả đã phê duyệt. Bạn phải ưu tiên tính đúng đắn nghiệp vụ, bảo mật, khả năng kiểm thử và code dễ bảo trì hơn tốc độ tạo nhiều file.
 
-## 9.2 Đọc tài liệu theo thứ tự
-1. `README.md`
-2. `PROJECT_OVERVIEW.md`
-3. `SRS.md`
-4. `BUSINESS_FLOWS.md`
-5. `DATABASE_SPEC.md`
-6. `ERD.md`
-7. `SECURITY_SPEC.md`
-8. `ARCHITECTURE.md`
-9. `IMPLEMENTATION_PLAN.md`
+## 9.2 Tra cứu tài liệu
+
+Luôn bắt đầu ở `docs/README.md`. File này là entry point duy nhất, quy định tài liệu cần đọc theo từng loại công việc và khi nào phải đọc toàn bộ specs. Không áp dụng một thứ tự đọc toàn bộ cố định cho mọi thay đổi.
+
+Khi công việc sửa kiến trúc, schema, quyền, tiền, đơn hàng hoặc tồn kho, bắt buộc đọc toàn bộ specs theo danh sách trong `docs/README.md`, cùng ADR và glossary liên quan.
 
 ## 9.3 Quy tắc không được vi phạm
 - Không tự ý thay đổi stack: Flutter Web + Supabase/PostgreSQL + Riverpod + GoRouter.

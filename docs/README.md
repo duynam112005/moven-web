@@ -1,24 +1,29 @@
 # MOVEN — Bộ tài liệu đặc tả kỹ thuật
 
-**Phiên bản:** 1.0  
-**Trạng thái:** Đặc tả MVP — chưa triển khai code hoặc SQL  
-**Sản phẩm:** Website bán quần áo một cửa hàng  
+**Phiên bản:** 1.1
+**Trạng thái:** Baseline MVP đang được triển khai — repository có ứng dụng Flutter Web, Supabase migrations, RLS/Storage scripts và test. Tài liệu này không xác nhận trạng thái triển khai hay production của từng môi trường.
+**Sản phẩm:** Website bán quần áo một cửa hàng
 **Thương hiệu:** MOVEN
 
 ## Mục đích
-Bộ tài liệu này là nguồn yêu cầu chuẩn cho người phát triển và AI lập trình. Các tài liệu mô tả phạm vi MVP, nghiệp vụ, kiến trúc, dữ liệu, ERD, bảo mật và kế hoạch triển khai. Chúng không chứa mã ứng dụng hoặc câu lệnh SQL triển khai.
 
-## Thứ tự ưu tiên khi đọc
-1. `PROJECT_OVERVIEW.md` — mục tiêu, phạm vi và quyết định nền tảng.
-2. `SRS.md` — yêu cầu chức năng và tiêu chí nghiệm thu.
-3. `BUSINESS_FLOWS.md` — luồng nghiệp vụ và quy tắc chuyển trạng thái.
-4. `DATABASE_SPEC.md` — mô hình dữ liệu logic và ràng buộc.
-5. `ERD.md` — sơ đồ quan hệ.
-6. `SECURITY_SPEC.md` — RLS, phân quyền và Storage.
-7. `ARCHITECTURE.md` — cấu trúc và trách nhiệm các lớp.
-8. `IMPLEMENTATION_PLAN.md` — thứ tự triển khai và kiểm thử.
-9. `OPEN_DECISIONS.md` - 
-10. `AI_BUILD_GUIDE.md` — quy tắc bắt buộc dành cho AI.
+Đây là **entry point duy nhất** cho AI và người phát triển khi cần tra cứu tài liệu dự án. Đọc file này trước, sau đó chỉ mở các tài liệu phù hợp với loại công việc. Bộ tài liệu mô tả phạm vi MVP, nghiệp vụ, kiến trúc, dữ liệu, bảo mật và kế hoạch triển khai; mã ứng dụng, migrations và tests là nguồn hiện trạng triển khai.
+
+## Chọn tài liệu theo loại công việc
+
+| Loại công việc | Tài liệu cần đọc trước khi đề xuất/thay đổi |
+|---|---|
+| Bất kỳ thay đổi nào | `PROJECT_OVERVIEW.md`, `AI_BUILD_GUIDE.md`, và phần tài liệu liên quan trong bảng này |
+| UI Flutter, state, routing, repository, model hoặc test | `ARCHITECTURE.md`, `SRS.md`; đọc `BUSINESS_FLOWS.md` khi chạm một luồng nghiệp vụ |
+| Catalog, banner, profile, cart, dashboard hoặc settings | `SRS.md`, `BUSINESS_FLOWS.md`; thêm `SECURITY_SPEC.md` nếu có dữ liệu riêng tư hoặc thao tác admin |
+| Auth, RLS, Storage, role, RPC hoặc Edge Function | `SECURITY_SPEC.md`, `ARCHITECTURE.md`, `SRS.md`; thêm luồng nghiệp vụ liên quan |
+| Sửa kiến trúc, schema, quyền, tiền, đơn hàng hoặc tồn kho | **Đọc toàn bộ bộ specs:** `PROJECT_OVERVIEW.md`, `SRS.md`, `BUSINESS_FLOWS.md`, `DATABASE_SPEC.md`, `ERD.md`, `SECURITY_SPEC.md`, `ARCHITECTURE.md`, `IMPLEMENTATION_PLAN.md`, `OPEN_DECISIONS.md`, `AI_BUILD_GUIDE.md`, cùng ADR và glossary liên quan |
+| Làm rõ thuật ngữ hoặc quyết định đã ghi nhận | `GLOSSARY.md` ở repo root và `docs/adr/`; đọc `OPEN_DECISIONS.md` nếu quyết định còn chưa chốt |
+| Lập kế hoạch hoặc kiểm thử/review phạm vi rộng | `IMPLEMENTATION_PLAN.md`, `SRS.md`, các specs của vùng ảnh hưởng và ADR liên quan |
+
+Không cần đọc toàn bộ specs cho thay đổi hẹp không thuộc nhóm nhạy cảm ở trên. Tuy vậy, luôn kiểm tra các tài liệu được chọn có mâu thuẫn với mã hoặc migrations hiện tại hay không.
+
+## Quy tắc đọc và xử lý xung đột
 
 Nếu hai tài liệu mâu thuẫn, không tự chọn một phương án. Dừng phần triển khai bị ảnh hưởng, ghi rõ xung đột và yêu cầu xác nhận. Các quy tắc bảo mật, toàn vẹn dữ liệu và giao dịch nguyên tử không được nới lỏng để tiện triển khai.
 
@@ -36,7 +41,7 @@ Nếu hai tài liệu mâu thuẫn, không tự chọn một phương án. Dừn
 - Mỗi khách được đánh giá một lần cho mỗi sản phẩm, chỉ sau khi sản phẩm có trong đơn giao thành công.
 - Không triển khai voucher/khuyến mãi trong MVP.
 - Không có quy trình đổi/trả tự phục vụ; khách liên hệ cửa hàng, admin xử lý thủ công.
-- Không viết code hoặc SQL trong giai đoạn đặc tả.
+- Đặc tả là baseline để đối chiếu; thay đổi code, SQL hoặc migrations phải tuân theo phạm vi đã được duyệt.
 
 ## Quy ước
 - Tiền tệ: VND, lưu dưới dạng số nguyên, không dùng floating point.

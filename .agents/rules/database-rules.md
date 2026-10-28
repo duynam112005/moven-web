@@ -56,19 +56,20 @@ trigger: model_decision
     match on the server. Enforce one review per customer/product.
 -   Use integer VND, never floating point, for money.
 
-## Known blockers in current specifications
+## Current specification status
 
--   `returned_to_stock` is present as an order status in the database
-    baseline, while `OPEN_DECISIONS.md` questions whether restock should
-    instead be a separate event/flag.
--   `order_status_history` is proposed in `OPEN_DECISIONS.md` but is not
-    consistently represented in `DATABASE_SPEC.md` and `ERD.md`.
+-   The approved baseline uses `returned`, not `returned_to_stock`, for
+    a fully received return that is restocked.
+-   `order_status_history` is part of the baseline and is represented
+    in the database specification and ERD.
 -   Review comment limits, low-stock threshold, SKU/order-code rules,
-    and address representation need confirmed decisions where they
-    affect implementation.
+    address representation, and other entries labelled proposed or
+    unresolved in `OPEN_DECISIONS.md` require explicit approval before
+    they affect schema or business behavior.
 
-Treat these as blockers for affected schema work. Do not select a
-"proposed" default without user approval.
+Treat only genuinely unresolved or conflicting decisions as blockers
+for affected database work. Do not select a proposed default without
+user approval.
 
 ## Migration safety
 
