@@ -68,7 +68,7 @@ final catalogProductsProvider =
     final filter = ref.watch(catalogFilterProvider);
     final page = ref.watch(catalogPageProvider);
 
-    return repo.getProducts(filter: filter, page: page, pageSize: 12);
+    return await repo.getProducts(filter: filter, page: page, pageSize: 12);
   } catch (_) {
     return const PaginatedResult<Product>(
       items: [],

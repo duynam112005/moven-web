@@ -57,23 +57,23 @@ class CartItemModel {
 
   factory CartItemModel.fromJson(Map<String, dynamic> json) {
     // Phân tích dữ liệu lồng nhau từ Supabase: variant(id, sku, size, color_name, price, compare_at_price, stock_quantity, is_active, product(...), product_images(...))
-    final variant = json['product_variants'] as Map<String, dynamic>? ??
-        json['variant'] as Map<String, dynamic>? ??
-        {};
-    final product = variant['products'] as Map<String, dynamic>? ??
-        variant['product'] as Map<String, dynamic>? ??
-        {};
+    final rawVariant = json['product_variants'] ?? json['variant'];
+    final variant = rawVariant is Map ? Map<String, dynamic>.from(rawVariant) : <String, dynamic>{};
+    final rawProduct = variant['products'] ?? variant['product'];
+    final product = rawProduct is Map ? Map<String, dynamic>.from(rawProduct) : <String, dynamic>{};
 
     // Lấy ảnh ưu tiên: ảnh riêng biến thể hoặc ảnh đầu tiên của sản phẩm
     String? img;
     final images = product['product_images'] as List<dynamic>?;
     if (images != null && images.isNotEmpty) {
-      final imgList = images.cast<Map<String, dynamic>>();
-      final variantImg = imgList.firstWhere(
-        (i) => i['variant_id'] == variant['id'],
-        orElse: () => imgList.first,
-      );
-      img = variantImg['image_path'] as String?;
+      final imgList = images.whereType<Map>().map((i) => Map<String, dynamic>.from(i)).toList();
+      if (imgList.isNotEmpty) {
+        final variantImg = imgList.firstWhere(
+          (i) => i['variant_id'] == variant['id'],
+          orElse: () => imgList.first,
+        );
+        img = variantImg['image_path'] as String?;
+      }
     }
 
     return CartItemModel(

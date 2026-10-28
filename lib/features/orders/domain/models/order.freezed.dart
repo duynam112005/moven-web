@@ -26,6 +26,7 @@ mixin _$Order {
   String get orderCode => throw _privateConstructorUsedError;
   @JsonKey(name: 'user_id')
   String get userId => throw _privateConstructorUsedError;
+  @JsonKey(unknownEnumValue: OrderStatus.pendingConfirmation)
   OrderStatus get status => throw _privateConstructorUsedError;
   @JsonKey(name: 'payment_method')
   String get paymentMethod => throw _privateConstructorUsedError;
@@ -81,6 +82,7 @@ abstract class $OrderCopyWith<$Res> {
     String id,
     @JsonKey(name: 'order_code') String orderCode,
     @JsonKey(name: 'user_id') String userId,
+    @JsonKey(unknownEnumValue: OrderStatus.pendingConfirmation)
     OrderStatus status,
     @JsonKey(name: 'payment_method') String paymentMethod,
     @JsonKey(name: 'payment_status') String paymentStatus,
@@ -244,6 +246,7 @@ abstract class _$$OrderImplCopyWith<$Res> implements $OrderCopyWith<$Res> {
     String id,
     @JsonKey(name: 'order_code') String orderCode,
     @JsonKey(name: 'user_id') String userId,
+    @JsonKey(unknownEnumValue: OrderStatus.pendingConfirmation)
     OrderStatus status,
     @JsonKey(name: 'payment_method') String paymentMethod,
     @JsonKey(name: 'payment_status') String paymentStatus,
@@ -400,6 +403,7 @@ class _$OrderImpl extends _Order {
     required this.id,
     @JsonKey(name: 'order_code') required this.orderCode,
     @JsonKey(name: 'user_id') required this.userId,
+    @JsonKey(unknownEnumValue: OrderStatus.pendingConfirmation)
     required this.status,
     @JsonKey(name: 'payment_method') this.paymentMethod = 'cod',
     @JsonKey(name: 'payment_status') this.paymentStatus = 'unpaid',
@@ -437,6 +441,7 @@ class _$OrderImpl extends _Order {
   @JsonKey(name: 'user_id')
   final String userId;
   @override
+  @JsonKey(unknownEnumValue: OrderStatus.pendingConfirmation)
   final OrderStatus status;
   @override
   @JsonKey(name: 'payment_method')
@@ -606,6 +611,7 @@ abstract class _Order extends Order {
     required final String id,
     @JsonKey(name: 'order_code') required final String orderCode,
     @JsonKey(name: 'user_id') required final String userId,
+    @JsonKey(unknownEnumValue: OrderStatus.pendingConfirmation)
     required final OrderStatus status,
     @JsonKey(name: 'payment_method') final String paymentMethod,
     @JsonKey(name: 'payment_status') final String paymentStatus,
@@ -640,6 +646,7 @@ abstract class _Order extends Order {
   @JsonKey(name: 'user_id')
   String get userId;
   @override
+  @JsonKey(unknownEnumValue: OrderStatus.pendingConfirmation)
   OrderStatus get status;
   @override
   @JsonKey(name: 'payment_method')

@@ -49,6 +49,7 @@ class OrdersRepository {
             id: 'item-001',
             orderId: 'ord-mock-001',
             variantId: 'var-001',
+            productId: 'prod-001',
             productName: 'Áo Thun Cotton Compact Cao Cấp',
             sku: 'MVN-TSHIRT-BLK-L',
             size: 'L',
@@ -61,6 +62,7 @@ class OrdersRepository {
             id: 'item-002',
             orderId: 'ord-mock-001',
             variantId: 'var-002',
+            productId: 'prod-002',
             productName: 'Quần Short Thể Thao Co Giãn',
             sku: 'MVN-SHORT-NVY-XL',
             size: 'XL',
@@ -110,6 +112,7 @@ class OrdersRepository {
             id: 'item-003',
             orderId: 'ord-mock-002',
             variantId: 'var-003',
+            productId: 'prod-001',
             productName: 'Áo Sơ Mi Oxford Dài Tay',
             sku: 'MVN-SHIRT-WHT-M',
             size: 'M',
@@ -169,6 +172,7 @@ class OrdersRepository {
             id: 'item-004',
             orderId: 'ord-mock-003',
             variantId: 'var-004',
+            productId: 'prod-002',
             productName: 'Quần Kaki Co Giãn Dáng Suông',
             sku: 'MVN-KAKI-BEI-32',
             size: '32',
@@ -307,7 +311,12 @@ class OrdersRepository {
           .from('orders')
           .select('''
             *,
-            order_items (*),
+            order_items (
+              *,
+              product_variants (
+                product_id
+              )
+            ),
             order_status_history (*)
           ''')
           .eq('user_id', userId);
@@ -321,7 +330,7 @@ class OrdersRepository {
           .range(offset, offset + limit - 1);
 
       final list = (response as List<dynamic>)
-          .map((data) => Order.fromJson(data as Map<String, dynamic>))
+          .map((data) => Order.fromJson(_normalizeMap(data)))
           .toList();
 
       return list;
@@ -347,7 +356,12 @@ class OrdersRepository {
           .from('orders')
           .select('''
             *,
-            order_items (*),
+            order_items (
+              *,
+              product_variants (
+                product_id
+              )
+            ),
             order_status_history (*)
           ''')
           .eq('order_code', orderCode)
@@ -357,7 +371,7 @@ class OrdersRepository {
         throw NotFoundException('Không tìm thấy đơn hàng với mã $orderCode');
       }
 
-      return Order.fromJson(response);
+      return Order.fromJson(_normalizeMap(response));
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException('Lỗi tải thông tin đơn hàng: $e');
@@ -427,6 +441,66 @@ class OrdersRepository {
     }
   }
 
+  /// Khách hàng xác nhận đã nhận được hàng (khi đơn đang ở shipping)
+  Future<void> customerConfirmDelivery({
+    required String orderCode,
+  }) async {
+    final client = _client;
+    if (client == null) {
+      final idx = _mockOrders.indexWhere(
+        (o) => o.orderCode.toLowerCase() == orderCode.toLowerCase(),
+      );
+      if (idx != -1) {
+        final current = _mockOrders[idx];
+        if (!current.status.canCustomerConfirmDelivery) {
+          throw const ValidationException(
+            'Chỉ có thể xác nhận nhận hàng khi đơn đang ở trạng thái Đang giao hàng.',
+          );
+        }
+        final now = DateTime.now();
+        final updatedHist = List<OrderStatusHistory>.from(current.statusHistory)
+          ..add(
+            OrderStatusHistory(
+              id: 'hist-${now.millisecondsSinceEpoch}',
+              orderId: current.id,
+              fromStatus: current.status,
+              toStatus: OrderStatus.delivered,
+              actorId: current.userId,
+              note: 'Khách hàng xác nhận đã nhận được kiện hàng',
+              createdAt: now,
+            ),
+          );
+
+        _mockOrders[idx] = current.copyWith(
+          status: OrderStatus.delivered,
+          deliveredAt: now,
+          updatedAt: now,
+          statusHistory: updatedHist,
+        );
+      }
+      return;
+    }
+
+    try {
+      await client.rpc(
+        'customer_confirm_delivery',
+        params: {
+          'p_order_code': orderCode,
+        },
+      );
+    } on PostgrestException catch (e) {
+      if (e.code == 'P0004' || e.code == 'P0002') {
+        throw ValidationException(e.message);
+      } else if (e.code == 'P0001') {
+        throw const AppAuthException('Bạn không có quyền xác nhận đơn hàng này.');
+      }
+      throw ServerException('Không thể xác nhận nhận hàng: ${e.message}');
+    } catch (e) {
+      if (e is AppException) rethrow;
+      throw ServerException('Không thể xác nhận nhận hàng: $e');
+    }
+  }
+
   // ==========================================
   // QUẢN TRỊ VIÊN (ADMIN APIS)
   // ==========================================
@@ -477,7 +551,7 @@ class OrdersRepository {
           .range(offset, offset + limit - 1);
 
       final list = (response as List<dynamic>)
-          .map((data) => Order.fromJson(data as Map<String, dynamic>))
+          .map((data) => Order.fromJson(_normalizeMap(data)))
           .toList();
 
       return list;
@@ -577,5 +651,43 @@ class OrdersRepository {
       if (e is AppException) rethrow;
       throw ServerException('Không thể cập nhật trạng thái thanh toán: $e');
     }
+  }
+
+  /// Chuẩn hoá đệ quy dữ liệu JSON từ Supabase (tránh lỗi TypeError trên Flutter Web)
+  static Map<String, dynamic> _normalizeMap(dynamic map) {
+    if (map is! Map) return <String, dynamic>{};
+    final normalized = map.map((key, value) {
+      if (value is Map) {
+        return MapEntry(key.toString(), _normalizeMap(value));
+      } else if (value is List) {
+        return MapEntry(
+          key.toString(),
+          value.map((e) => e is Map ? _normalizeMap(e) : e).toList(),
+        );
+      }
+      return MapEntry(key.toString(), value);
+    });
+
+    // Trích xuất product_id từ product_variants nếu có trong order_item
+    if (normalized.containsKey('product_variants') &&
+        normalized['product_variants'] is Map &&
+        normalized['product_id'] == null) {
+      final pv = normalized['product_variants'] as Map<String, dynamic>;
+      if (pv.containsKey('product_id')) {
+        normalized['product_id'] = pv['product_id'];
+      }
+    }
+
+    // Tương thích ngược các trạng thái cũ sang pending_confirmation
+    for (final statusKey in const ['status', 'from_status', 'to_status']) {
+      if (normalized.containsKey(statusKey) && normalized[statusKey] is String) {
+        final val = (normalized[statusKey] as String).trim().toLowerCase();
+        if (val == 'pending' || val == 'confirmed' || val == 'preparing') {
+          normalized[statusKey] = 'pending_confirmation';
+        }
+      }
+    }
+
+    return normalized;
   }
 }

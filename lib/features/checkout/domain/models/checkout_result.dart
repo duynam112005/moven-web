@@ -21,9 +21,9 @@ class CheckoutResult {
 
   factory CheckoutResult.fromJson(Map<String, dynamic> json) {
     return CheckoutResult(
-      success: json['success'] as bool? ?? false,
-      orderId: json['order_id'] as String? ?? '',
-      orderCode: json['order_code'] as String? ?? '',
+      success: json['success'] == true,
+      orderId: json['order_id']?.toString() ?? '',
+      orderCode: json['order_code']?.toString() ?? '',
       subtotal: (json['subtotal'] as num?)?.toInt() ?? 0,
       shippingFee: (json['shipping_fee'] as num?)?.toInt() ?? 20000,
       totalAmount: (json['total_amount'] as num?)?.toInt() ?? 0,

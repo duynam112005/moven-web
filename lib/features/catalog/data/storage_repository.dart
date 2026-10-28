@@ -14,10 +14,30 @@ import '../../../core/network/supabase_client.dart';
 class StorageRepository {
   final SupabaseClient? _client;
 
-  static const String productBucket = 'product-images';
+  static const String productBucket = 'product-media';
   static const String bannerBucket = 'banners';
 
   StorageRepository(this._client);
+
+  /// Suy đoán MIME type từ đuôi tệp tin (hỗ trợ whitelist Supabase Storage)
+  static String inferContentType(String fileName) {
+    final parts = fileName.split('.');
+    if (parts.length > 1) {
+      final ext = parts.last.toLowerCase();
+      switch (ext) {
+        case 'png':
+          return 'image/png';
+        case 'webp':
+          return 'image/webp';
+        case 'gif':
+          return 'image/gif';
+        case 'jpg':
+        case 'jpeg':
+          return 'image/jpeg';
+      }
+    }
+    return 'image/jpeg';
+  }
 
   /// Lấy URL công khai để hiển thị ảnh
   String getPublicUrl({
@@ -63,11 +83,15 @@ class StorageRepository {
         throw const ServerException('Supabase chưa được cấu hình');
       }
 
+      final resolvedContentType = contentType == 'image/jpeg'
+          ? inferContentType(fileName)
+          : contentType;
+
       await _client.storage.from(productBucket).uploadBinary(
             uploadPath,
             bytes,
             fileOptions: FileOptions(
-              contentType: contentType,
+              contentType: resolvedContentType,
               upsert: true,
             ),
           );
@@ -99,11 +123,15 @@ class StorageRepository {
         throw const ServerException('Supabase chưa được cấu hình');
       }
 
+      final resolvedContentType = contentType == 'image/jpeg'
+          ? inferContentType(fileName)
+          : contentType;
+
       await _client.storage.from(bannerBucket).uploadBinary(
             uploadPath,
             bytes,
             fileOptions: FileOptions(
-              contentType: contentType,
+              contentType: resolvedContentType,
               upsert: true,
             ),
           );

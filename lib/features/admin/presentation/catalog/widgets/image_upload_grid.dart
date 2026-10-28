@@ -68,7 +68,17 @@ class _ImageUploadGridState extends ConsumerState<ImageUploadGrid> {
         final reader = html.FileReader();
         reader.readAsArrayBuffer(file);
         await reader.onLoad.first;
-        final bytes = reader.result as Uint8List;
+        final rawResult = reader.result;
+        Uint8List bytes;
+        if (rawResult is Uint8List) {
+          bytes = rawResult;
+        } else if (rawResult is ByteBuffer) {
+          bytes = rawResult.asUint8List();
+        } else if (rawResult is List<int>) {
+          bytes = Uint8List.fromList(rawResult);
+        } else {
+          continue;
+        }
         setState(() => _pending.add(_PendingUpload(bytes, file.name)));
       }
     });
@@ -80,7 +90,6 @@ class _ImageUploadGridState extends ConsumerState<ImageUploadGrid> {
     setState(() => _uploading = true);
     try {
       final storageRepo = ref.read(storageRepositoryProvider);
-      final catalogRepo = ref.read(catalogRepositoryProvider);
       final updatedImages = List<ProductImage>.from(widget.images);
 
       for (final pending in _pending) {
@@ -88,23 +97,18 @@ class _ImageUploadGridState extends ConsumerState<ImageUploadGrid> {
           bytes: pending.bytes,
           fileName: pending.name,
           folder: widget.productId.isEmpty ? 'temp' : widget.productId,
+          contentType: StorageRepository.inferContentType(pending.name),
         );
-        if (widget.productId.isNotEmpty) {
-          // Insert DB row immediately if product already exists.
-          final now = DateTime.now();
-          final img = ProductImage(
-            id: '',
-            productId: widget.productId,
-            imagePath: path,
-            sortOrder: updatedImages.length,
-            isPrimary: updatedImages.isEmpty,
-            createdAt: now,
-          );
-          // We call the low-level Supabase client via CatalogRepository by
-          // inserting the image directly. The returned object has a real id.
-          final saved = await _insertImage(catalogRepo, img);
-          updatedImages.add(saved);
-        }
+        final now = DateTime.now();
+        final img = ProductImage(
+          id: 'temp_${now.millisecondsSinceEpoch}_${updatedImages.length}',
+          productId: widget.productId,
+          imagePath: path,
+          sortOrder: updatedImages.length,
+          isPrimary: updatedImages.isEmpty,
+          createdAt: now,
+        );
+        updatedImages.add(img);
       }
 
       setState(() => _pending.clear());
@@ -118,17 +122,6 @@ class _ImageUploadGridState extends ConsumerState<ImageUploadGrid> {
     } finally {
       if (mounted) setState(() => _uploading = false);
     }
-  }
-
-  Future<ProductImage> _insertImage(
-    CatalogRepository repo,
-    ProductImage img,
-  ) async {
-    // Re-use updateProduct's image insert path by posting a single-image list.
-    // We bypass it here by getting the result from updateProduct (which returns full product).
-    // For simplicity, we construct a temp image and let the parent form handle the final save.
-    // This approach avoids a raw Supabase call here and keeps the repository as authority.
-    return img.copyWith(id: 'temp_${DateTime.now().millisecondsSinceEpoch}');
   }
 
   Future<void> _deleteImage(ProductImage img) async {
@@ -153,13 +146,20 @@ class _ImageUploadGridState extends ConsumerState<ImageUploadGrid> {
       // Only delete from DB if image has a real (non-temp) id.
       if (img.id.isNotEmpty && !img.id.startsWith('temp_')) {
         await ref.read(catalogRepositoryProvider).deleteProductImage(img.id);
-        // Optionally delete from Storage too.
-        await ref.read(storageRepositoryProvider).deleteFile(
-              bucket: StorageRepository.productBucket,
-              path: img.imagePath,
-            );
+      }
+      // Dọn dẹp file trên Storage nếu có đường dẫn
+      if (img.imagePath.isNotEmpty) {
+        try {
+          await ref.read(storageRepositoryProvider).deleteFile(
+                bucket: StorageRepository.productBucket,
+                path: img.imagePath,
+              );
+        } catch (_) {}
       }
       final updated = widget.images.where((i) => i.id != img.id).toList();
+      if (updated.isNotEmpty && !updated.any((i) => i.isPrimary)) {
+        updated[0] = updated[0].copyWith(isPrimary: true);
+      }
       widget.onImagesChanged(updated);
     } catch (e) {
       if (mounted) {
@@ -262,17 +262,19 @@ class _ImageCell extends StatelessWidget {
                 ? Border.all(
                     color: Theme.of(context).colorScheme.primary, width: 2)
                 : null,
-            image: imageUrl.isNotEmpty
-                ? DecorationImage(
-                    image: NetworkImage(imageUrl),
-                    fit: BoxFit.cover,
-                  )
-                : null,
             color: Colors.grey.shade200,
           ),
-          child: imageUrl.isEmpty
-              ? const Icon(Icons.broken_image_outlined, color: Colors.grey)
-              : null,
+          clipBehavior: Clip.antiAlias,
+          child: imageUrl.isNotEmpty
+              ? Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => const Icon(
+                    Icons.broken_image_outlined,
+                    color: Colors.grey,
+                  ),
+                )
+              : const Icon(Icons.broken_image_outlined, color: Colors.grey),
         ),
         if (isPrimary)
           Positioned(

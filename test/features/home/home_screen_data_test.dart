@@ -2,6 +2,8 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:moven/core/router/route_names.dart';
 import 'package:moven/core/utils/currency_formatter.dart';
 import 'package:moven/features/catalog/data/catalog_providers.dart';
 import 'package:moven/features/catalog/data/storage_repository.dart';
@@ -184,5 +186,72 @@ void main() {
     expect(find.text('Thử lại'), findsOneWidget);
     // Đảm bảo không ném bất kỳ exception overflow nào
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'Tapping "Khám phá ngay" on category banner updates catalogFilterProvider with categorySlug',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1280, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final container = ProviderContainer(
+      overrides: [
+        storageRepositoryProvider
+            .overrideWithValue(FakeStorageRepository()),
+        activeBannersProvider.overrideWith((ref) => Future.value(testBanners)),
+        activeCategoriesProvider
+            .overrideWith((ref) => Future.value(testCategories)),
+        featuredProductsProvider
+            .overrideWith((ref) => Future.value(testFeaturedProducts)),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final testRouter = GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) => const Scaffold(
+            body: SingleChildScrollView(child: HomeScreen()),
+          ),
+        ),
+        GoRoute(
+          path: '/catalog',
+          name: RouteNames.catalog,
+          builder: (context, state) => const Scaffold(
+            body: Text('Catalog Page'),
+          ),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(
+          routerConfig: testRouter,
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    final exploreBtn = find.text('Khám phá ngay');
+    expect(exploreBtn, findsOneWidget);
+    await tester.tap(exploreBtn);
+    await tester.pumpAndSettle();
+
+    // Xác nhận đã điều hướng tới trang Catalog
+    expect(find.text('Catalog Page'), findsOneWidget);
+
+    // Xác nhận catalogFilterProvider lưu trữ categorySlug chính xác
+    final filter = container.read(catalogFilterProvider);
+    expect(filter.categorySlug, 'ao-thun');
+    expect(filter.categoryId, isNull);
   });
 }

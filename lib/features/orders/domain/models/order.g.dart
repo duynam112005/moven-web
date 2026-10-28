@@ -10,7 +10,11 @@ _$OrderImpl _$$OrderImplFromJson(Map<String, dynamic> json) => _$OrderImpl(
   id: json['id'] as String,
   orderCode: json['order_code'] as String,
   userId: json['user_id'] as String,
-  status: $enumDecode(_$OrderStatusEnumMap, json['status']),
+  status: $enumDecode(
+    _$OrderStatusEnumMap,
+    json['status'],
+    unknownValue: OrderStatus.pendingConfirmation,
+  ),
   paymentMethod: json['payment_method'] as String? ?? 'cod',
   paymentStatus: json['payment_status'] as String? ?? 'unpaid',
   recipientName: json['recipient_name'] as String,
@@ -69,10 +73,10 @@ Map<String, dynamic> _$$OrderImplToJson(_$OrderImpl instance) =>
     };
 
 const _$OrderStatusEnumMap = {
-  OrderStatus.pendingConfirmation: 'pendingConfirmation',
+  OrderStatus.pendingConfirmation: 'pending_confirmation',
   OrderStatus.shipping: 'shipping',
   OrderStatus.delivered: 'delivered',
-  OrderStatus.deliveryFailed: 'deliveryFailed',
+  OrderStatus.deliveryFailed: 'delivery_failed',
   OrderStatus.cancelled: 'cancelled',
   OrderStatus.returned: 'returned',
 };

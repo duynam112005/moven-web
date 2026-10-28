@@ -1,8 +1,46 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:moven/features/orders/domain/models/order.dart';
 import 'package:moven/features/orders/domain/models/order_status.dart';
 
 void main() {
   group('OrderStatus Domain Model Tests', () {
+    test('Order.fromJson deserializes snake_case database statuses accurately', () {
+      final json = {
+        'id': 'ord-123',
+        'order_code': 'MVN-TEST01',
+        'user_id': 'usr-001',
+        'status': 'pending_confirmation',
+        'payment_method': 'cod',
+        'payment_status': 'unpaid',
+        'recipient_name': 'Test User',
+        'recipient_phone': '0901234567',
+        'subtotal': 100000,
+        'shipping_fee': 20000,
+        'discount_amount': 0,
+        'total_amount': 120000,
+        'created_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+        'order_items': <Map<String, dynamic>>[],
+        'order_status_history': [
+          {
+            'id': 'hist-001',
+            'order_id': 'ord-123',
+            'from_status': null,
+            'to_status': 'pending_confirmation',
+            'created_at': DateTime.now().toIso8601String(),
+          }
+        ],
+      };
+
+      final order = Order.fromJson(json);
+      expect(order.status, OrderStatus.pendingConfirmation);
+      expect(order.statusHistory.first.toStatus, OrderStatus.pendingConfirmation);
+
+      // Verify delivery_failed snake_case deserialization
+      final failedOrder = Order.fromJson({...json, 'status': 'delivery_failed'});
+      expect(failedOrder.status, OrderStatus.deliveryFailed);
+    });
+
     test('OrderStatus.fromString parses database status strings accurately', () {
       expect(OrderStatus.fromString('pending_confirmation'), OrderStatus.pendingConfirmation);
       expect(OrderStatus.fromString('shipping'), OrderStatus.shipping);

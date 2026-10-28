@@ -49,6 +49,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
     final current = ref.read(catalogFilterProvider);
     ref.read(catalogFilterProvider.notifier).state = current.copyWith(
       categoryId: categoryId,
+      categorySlug: null,
     );
     ref.read(catalogPageProvider.notifier).state = 1;
   }
@@ -269,8 +270,9 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
           // Lọc đối tượng
           _buildChoiceChip(
             label: 'Tất cả',
-            isSelected:
-                filter.targetAudience == null && filter.categoryId == null,
+            isSelected: filter.targetAudience == null &&
+                filter.categoryId == null &&
+                filter.categorySlug == null,
             onSelected: () {
               _onAudienceSelected(null);
               _onCategorySelected(null);
@@ -308,7 +310,9 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
           categoriesAsync.when(
             data: (categories) => Row(
               children: categories.map((cat) {
-                final isSelected = filter.categoryId == cat.id;
+                final isSelected = filter.categoryId == cat.id ||
+                    (filter.categorySlug != null &&
+                        filter.categorySlug == cat.slug);
                 return _buildChoiceChip(
                   label: cat.name,
                   isSelected: isSelected,

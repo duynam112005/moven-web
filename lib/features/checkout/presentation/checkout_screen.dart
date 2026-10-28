@@ -4,10 +4,10 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/errors/app_exception.dart';
 import '../../../core/network/supabase_client.dart';
 import '../../../core/router/route_names.dart';
 import '../../../core/utils/currency_formatter.dart';
-import '../../../core/utils/responsive_layout.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_loading.dart';
 import '../../../core/widgets/empty_state_view.dart';
@@ -118,6 +118,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Future<void> _handleCheckout(List<CartItemModel> items) async {
+    // Giải phóng focus của bàn phím / input ngay từ đầu
+    FocusScope.of(context).unfocus();
     setState(() => _checkoutErrorMessage = null);
 
     Map<String, dynamic> shippingAddressMap;
@@ -179,21 +181,34 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           );
 
       if (result != null && mounted) {
-        await showDialog(
+        // Giải phóng focus của bàn phím / input ngay từ đầu
+        FocusScope.of(context).unfocus();
+
+        final targetRoute = await OrderSuccessDialog.show(
           context: context,
-          barrierDismissible: false,
-          builder: (dialogCtx) => OrderSuccessDialog(
-            result: result,
-            recipientName: recipientName,
-            recipientPhone: recipientPhone,
-            shippingAddressText: displayAddress,
-          ),
+          result: result,
+          recipientName: recipientName,
+          recipientPhone: recipientPhone,
+          shippingAddressText: displayAddress,
         );
+
+        if (!mounted) return;
+        ref.read(checkoutControllerProvider.notifier).reset();
+        await ref.read(cartNotifierProvider.notifier).loadCart();
+
+        if (!mounted) return;
+        if (targetRoute != null && targetRoute.isNotEmpty) {
+          context.go(targetRoute);
+        } else {
+          context.go(RouteNames.catalogPath);
+        }
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _checkoutErrorMessage = e.toString().replaceFirst('Exception: ', '');
+          _checkoutErrorMessage = e is AppException
+              ? e.message
+              : e.toString().replaceFirst('Exception: ', '');
         });
       }
     }
@@ -262,23 +277,29 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           final checkoutState = ref.watch(checkoutControllerProvider);
           final isSubmitting = checkoutState.isLoading;
 
-          return ResponsiveLayout(
-            mobile: _buildMobileCheckout(
-              context,
-              items,
-              subtotal,
-              shippingFee,
-              totalAmount,
-              isSubmitting,
-            ),
-            desktop: _buildDesktopCheckout(
-              context,
-              items,
-              subtotal,
-              shippingFee,
-              totalAmount,
-              isSubmitting,
-            ),
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final isDesktop =
+                  constraints.maxWidth >= AppDimensions.tabletBreakpoint;
+              if (isDesktop) {
+                return _buildDesktopCheckout(
+                  context,
+                  items,
+                  subtotal,
+                  shippingFee,
+                  totalAmount,
+                  isSubmitting,
+                );
+              }
+              return _buildMobileCheckout(
+                context,
+                items,
+                subtotal,
+                shippingFee,
+                totalAmount,
+                isSubmitting,
+              );
+            },
           );
         },
       ),

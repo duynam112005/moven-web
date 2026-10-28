@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/supabase_client.dart';
-import '../../cart/data/cart_providers.dart';
 import '../domain/models/checkout_result.dart';
 import 'checkout_repository.dart';
 
@@ -28,9 +27,8 @@ final defaultShippingFeeProvider = FutureProvider<int>((ref) async {
 /// State quản lý quá trình thực hiện thanh toán COD
 class CheckoutController extends StateNotifier<AsyncValue<CheckoutResult?>> {
   final CheckoutRepository? _repository;
-  final Ref _ref;
 
-  CheckoutController(this._repository, this._ref)
+  CheckoutController(this._repository, [Ref? _])
       : super(const AsyncValue.data(null));
 
   /// Thực hiện đặt hàng COD với cơ chế bảo vệ duplicate click
@@ -56,10 +54,6 @@ class CheckoutController extends StateNotifier<AsyncValue<CheckoutResult?>> {
       );
 
       state = AsyncValue.data(result);
-
-      // Cập nhật lại giỏ hàng sau khi đặt thành công (các món đã đặt đã bị RPC xóa)
-      await _ref.read(cartNotifierProvider.notifier).loadCart();
-
       return result;
     } catch (e, st) {
       state = AsyncValue.error(e, st);

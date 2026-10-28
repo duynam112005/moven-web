@@ -103,6 +103,28 @@ class OrderActionController extends StateNotifier<AsyncValue<String?>> {
     }
   }
 
+  /// Khách hàng xác nhận đã nhận được kiện hàng (chuyển sang delivered)
+  Future<bool> customerConfirmDelivery({
+    required String orderCode,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      await _repository.customerConfirmDelivery(
+        orderCode: orderCode,
+      );
+      // Tự động làm mới dữ liệu
+      _ref.invalidate(customerOrdersProvider);
+      _ref.invalidate(orderDetailProvider(orderCode));
+      _ref.invalidate(adminOrdersProvider);
+
+      state = const AsyncValue.data('Xác nhận đã nhận hàng thành công!');
+      return true;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return false;
+    }
+  }
+
   /// Admin cập nhật trạng thái đơn hàng theo máy trạng thái ADR-0001
   Future<bool> adminUpdateStatus({
     required String orderId,

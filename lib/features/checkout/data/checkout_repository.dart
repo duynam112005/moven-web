@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/errors/app_exception.dart';
 import '../domain/models/checkout_result.dart';
@@ -44,7 +45,14 @@ class CheckoutRepository {
         },
       );
 
-      final resultMap = response as Map<String, dynamic>;
+      final Map<String, dynamic> resultMap;
+      if (response is Map) {
+        resultMap = Map<String, dynamic>.from(response);
+      } else if (response is String) {
+        resultMap = Map<String, dynamic>.from(jsonDecode(response) as Map);
+      } else {
+        throw const ServerException('Phản hồi từ máy chủ không hợp lệ.');
+      }
       return CheckoutResult.fromJson(resultMap);
     } on PostgrestException catch (e) {
       // Phân tách mã lỗi nghiệp vụ từ RPC

@@ -12,6 +12,7 @@ class OrderItem with _$OrderItem {
     required String id,
     @JsonKey(name: 'order_id') required String orderId,
     @JsonKey(name: 'variant_id') String? variantId,
+    @JsonKey(name: 'product_id') String? productId,
     @JsonKey(name: 'product_name_snapshot') required String productName,
     @JsonKey(name: 'sku_snapshot') required String sku,
     @JsonKey(name: 'size_snapshot') String? size,
