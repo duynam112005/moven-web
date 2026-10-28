@@ -171,114 +171,127 @@ class _OrderDetailView extends ConsumerWidget {
         OrderTimelineStepper(order: order),
         const SizedBox(height: AppDimensions.space24),
 
-        // Customer Confirm Delivery action card (when status is shipping)
-        if (order.status.canCustomerConfirmDelivery) ...[
+        // Thông báo tiến trình vận chuyển (khi đơn đang shipping)
+        if (order.status == OrderStatus.shipping) ...[
           Container(
             width: double.infinity,
             margin: const EdgeInsets.only(bottom: AppDimensions.space24),
             padding: const EdgeInsets.all(AppDimensions.space20),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.05),
+              color: AppColors.info.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(AppDimensions.radius12),
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+              border: Border.all(color: AppColors.info.withValues(alpha: 0.2)),
             ),
-            child: isMobile
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppDimensions.space10),
+                  decoration: BoxDecoration(
+                    color: AppColors.info.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.local_shipping_outlined,
+                    color: AppColors.info,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: AppDimensions.space16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Text(
+                        'Kiện hàng đang trên đường giao tới bạn',
+                        style: AppTypography.titleMedium.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.info,
+                        ),
+                      ),
+                      const SizedBox(height: AppDimensions.space4),
+                      Text(
+                        'Nhân viên giao vận sẽ liên hệ với bạn qua số điện thoại ${order.recipientPhone} trước khi phát hàng. Quý khách vui lòng kiểm tra kiện hàng và thanh toán số tiền COD ${CurrencyFormatter.format(order.totalAmount)} khi nhận.',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.textPrimary,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: AppDimensions.space8),
                       Row(
                         children: [
-                          const Icon(
-                            Icons.local_shipping_outlined,
-                            color: AppColors.primary,
-                            size: 24,
-                          ),
-                          const SizedBox(width: AppDimensions.space12),
+                          const Icon(Icons.info_outline, size: 14, color: AppColors.textMuted),
+                          const SizedBox(width: AppDimensions.space4),
                           Expanded(
                             child: Text(
-                              'Kiện hàng đang được giao tới bạn',
-                              style: AppTypography.titleMedium.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.primary,
+                              'Sau khi giao hàng thành công, hệ thống sẽ mở tính năng đánh giá sản phẩm bên dưới.',
+                              style: AppTypography.bodySmall.copyWith(
+                                color: AppColors.textSecondary,
+                                fontStyle: FontStyle.italic,
                               ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: AppDimensions.space8),
-                      Text(
-                        'Nếu bạn đã nhận đủ kiện hàng từ shipper, hãy nhấn xác nhận để hoàn tất đơn và mở tính năng đánh giá sản phẩm.',
-                        style: AppTypography.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: AppDimensions.space16),
-                      FilledButton.icon(
-                        key: const ValueKey('customer_confirm_delivery_button'),
-                        onPressed: () => _showConfirmDeliveryDialog(context, ref, order),
-                        icon: const Icon(Icons.check_circle_outline, size: 18),
-                        label: const Text('Đã nhận được hàng'),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppDimensions.space20,
-                            vertical: AppDimensions.space12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppDimensions.radius8),
-                          ),
-                        ),
-                      ),
                     ],
-                  )
-                : Row(
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+
+        // Thông báo giao hàng thành công & hướng dẫn đánh giá (khi đơn delivered)
+        if (order.status == OrderStatus.delivered) ...[
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: AppDimensions.space24),
+            padding: const EdgeInsets.all(AppDimensions.space20),
+            decoration: BoxDecoration(
+              color: AppColors.success.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(AppDimensions.radius12),
+              border: Border.all(color: AppColors.success.withValues(alpha: 0.25)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppDimensions.space10),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_circle_outline,
+                    color: AppColors.success,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: AppDimensions.space16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(
-                        Icons.local_shipping_outlined,
-                        color: AppColors.primary,
-                        size: 32,
-                      ),
-                      const SizedBox(width: AppDimensions.space16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Kiện hàng đang được giao tới bạn',
-                              style: AppTypography.titleMedium.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Nếu bạn đã nhận đủ kiện hàng từ shipper, hãy nhấn xác nhận để hoàn tất đơn và mở tính năng đánh giá sản phẩm.',
-                              style: AppTypography.bodySmall.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
+                      Text(
+                        'Đơn hàng đã giao thành công!',
+                        style: AppTypography.titleMedium.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.success,
                         ),
                       ),
-                      const SizedBox(width: AppDimensions.space16),
-                      FilledButton.icon(
-                        key: const ValueKey('customer_confirm_delivery_button'),
-                        onPressed: () => _showConfirmDeliveryDialog(context, ref, order),
-                        icon: const Icon(Icons.check_circle_outline, size: 18),
-                        label: const Text('Đã nhận được hàng'),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppDimensions.space20,
-                            vertical: AppDimensions.space12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppDimensions.radius8),
-                          ),
+                      const SizedBox(height: AppDimensions.space4),
+                      Text(
+                        'Cảm ơn bạn đã tin chọn MOVEN. Hãy chia sẻ cảm nhận và đánh giá chất lượng cho từng sản phẩm ở danh sách kiện hàng bên dưới nhé!',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.textPrimary,
+                          height: 1.4,
                         ),
                       ),
                     ],
                   ),
+                ),
+              ],
+            ),
           ),
         ],
 
@@ -520,81 +533,6 @@ class _OrderDetailView extends ConsumerWidget {
             backgroundColor: AppColors.error,
           ),
         );
-      }
-    }
-  }
-
-  Future<void> _showConfirmDeliveryDialog(
-    BuildContext context,
-    WidgetRef ref,
-    Order order,
-  ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Xác nhận đã nhận hàng?'),
-        content: const Text(
-          'Bạn xác nhận đã nhận được kiện hàng và sản phẩm trong tình trạng tốt?\n\n'
-          'Sau khi xác nhận, đơn hàng sẽ chuyển sang trạng thái "Giao thành công" và bạn có thể đánh giá sản phẩm.',
-        ),
-        actions: [
-          TextButton(
-            key: const ValueKey('dismiss_confirm_delivery_button'),
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Chưa nhận'),
-          ),
-          FilledButton.icon(
-            key: const ValueKey('confirm_delivery_dialog_confirm_button'),
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            icon: const Icon(Icons.check, size: 18),
-            label: const Text('Đã nhận hàng'),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary,
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && context.mounted) {
-      try {
-        final success = await ref
-            .read(orderActionControllerProvider.notifier)
-            .customerConfirmDelivery(orderCode: order.orderCode);
-
-        if (context.mounted) {
-          final messenger = ScaffoldMessenger.maybeOf(context);
-          if (success) {
-            messenger?.showSnackBar(
-              const SnackBar(
-                backgroundColor: AppColors.success,
-                content: Text(
-                  'Xác nhận nhận hàng thành công! Bạn có thể đánh giá sản phẩm ngay bên dưới.',
-                ),
-              ),
-            );
-          } else {
-            final error = ref.read(orderActionControllerProvider).error;
-            final message = error is AppException
-                ? error.message
-                : 'Không thể xác nhận nhận hàng. Vui lòng thử lại sau.';
-            messenger?.showSnackBar(
-              SnackBar(
-                content: Text(message),
-                backgroundColor: AppColors.error,
-              ),
-            );
-          }
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-            SnackBar(
-              content: Text('Đã xảy ra lỗi khi xác nhận nhận hàng: $e'),
-              backgroundColor: AppColors.error,
-            ),
-          );
-        }
       }
     }
   }

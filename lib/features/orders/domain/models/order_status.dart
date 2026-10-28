@@ -140,9 +140,6 @@ enum OrderStatus {
   /// Khách hàng chỉ được phép tự hủy đơn khi đơn ở pendingConfirmation
   bool get canCustomerCancel => this == OrderStatus.pendingConfirmation;
 
-  /// Khách hàng được phép tự xác nhận đã nhận hàng khi đơn đang ở shipping
-  bool get canCustomerConfirmDelivery => this == OrderStatus.shipping;
-
   /// Các trạng thái tiếp theo hợp lệ mà Admin có thể chuyển tới (theo State Machine ADR-0001)
   List<OrderStatus> get validNextStatusesAdmin {
     switch (this) {
