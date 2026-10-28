@@ -69,14 +69,16 @@ class _CancelOrderDialogState extends State<CancelOrderDialog> {
       backgroundColor: AppColors.surface,
       surfaceTintColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      clipBehavior: Clip.antiAlias,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
-        child: Padding(
-          padding: const EdgeInsets.all(AppDimensions.space24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(AppDimensions.space24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               // Header
               Row(
                 children: [
@@ -189,7 +191,7 @@ class _CancelOrderDialogState extends State<CancelOrderDialog> {
                 crossFadeState: _selectedReason == 'Lý do khác...'
                     ? CrossFadeState.showSecond
                     : CrossFadeState.showFirst,
-                firstChild: const SizedBox(width: double.infinity),
+                firstChild: const SizedBox.shrink(),
                 secondChild: Padding(
                   padding: const EdgeInsets.only(top: AppDimensions.space8),
                   child: TextField(
@@ -245,6 +247,7 @@ class _CancelOrderDialogState extends State<CancelOrderDialog> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
+                    key: const ValueKey('dismiss_cancel_order_button'),
                     onPressed: () => Navigator.of(context).pop(null),
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.textSecondary,
@@ -257,6 +260,7 @@ class _CancelOrderDialogState extends State<CancelOrderDialog> {
                   ),
                   const SizedBox(width: AppDimensions.space12),
                   ElevatedButton(
+                    key: const ValueKey('confirm_cancel_order_button'),
                     onPressed: _handleConfirm,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.error,
@@ -280,6 +284,7 @@ class _CancelOrderDialogState extends State<CancelOrderDialog> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }

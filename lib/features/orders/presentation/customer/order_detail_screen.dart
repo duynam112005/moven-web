@@ -384,6 +384,7 @@ class _OrderDetailView extends ConsumerWidget {
                   ),
                 ),
                 OutlinedButton(
+                  key: const ValueKey('customer_cancel_order_button'),
                   onPressed: () => _handleCustomerCancelOrder(context, ref, order),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.error,
@@ -484,26 +485,38 @@ class _OrderDetailView extends ConsumerWidget {
     final reason = await CancelOrderDialog.show(context, order.orderCode);
     if (reason == null || !context.mounted) return;
 
-    final success = await ref
-        .read(orderActionControllerProvider.notifier)
-        .cancelOrder(orderCode: order.orderCode, reason: reason);
+    try {
+      final success = await ref
+          .read(orderActionControllerProvider.notifier)
+          .cancelOrder(orderCode: order.orderCode, reason: reason);
 
-    if (context.mounted) {
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Đã hủy đơn hàng thành công.'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-      } else {
-        final error = ref.read(orderActionControllerProvider).error;
-        final message = error is AppException
-            ? error.message
-            : 'Không thể hủy đơn hàng. Vui lòng thử lại sau.';
-        ScaffoldMessenger.of(context).showSnackBar(
+      if (context.mounted) {
+        final messenger = ScaffoldMessenger.maybeOf(context);
+        if (success) {
+          messenger?.showSnackBar(
+            const SnackBar(
+              content: Text('Đã hủy đơn hàng thành công.'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        } else {
+          final error = ref.read(orderActionControllerProvider).error;
+          final message = error is AppException
+              ? error.message
+              : 'Không thể hủy đơn hàng. Vui lòng thử lại sau.';
+          messenger?.showSnackBar(
+            SnackBar(
+              content: Text(message),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(
-            content: Text(message),
+            content: Text('Đã xảy ra lỗi khi hủy đơn hàng: $e'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -526,10 +539,12 @@ class _OrderDetailView extends ConsumerWidget {
         ),
         actions: [
           TextButton(
+            key: const ValueKey('dismiss_confirm_delivery_button'),
             onPressed: () => Navigator.of(dialogContext).pop(false),
             child: const Text('Chưa nhận'),
           ),
           FilledButton.icon(
+            key: const ValueKey('confirm_delivery_dialog_confirm_button'),
             onPressed: () => Navigator.of(dialogContext).pop(true),
             icon: const Icon(Icons.check, size: 18),
             label: const Text('Đã nhận hàng'),
@@ -542,19 +557,44 @@ class _OrderDetailView extends ConsumerWidget {
     );
 
     if (confirmed == true && context.mounted) {
-      final success = await ref
-          .read(orderActionControllerProvider.notifier)
-          .customerConfirmDelivery(orderCode: order.orderCode);
+      try {
+        final success = await ref
+            .read(orderActionControllerProvider.notifier)
+            .customerConfirmDelivery(orderCode: order.orderCode);
 
-      if (success && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            backgroundColor: AppColors.success,
-            content: Text(
-              'Xác nhận nhận hàng thành công! Bạn có thể đánh giá sản phẩm ngay bên dưới.',
+        if (context.mounted) {
+          final messenger = ScaffoldMessenger.maybeOf(context);
+          if (success) {
+            messenger?.showSnackBar(
+              const SnackBar(
+                backgroundColor: AppColors.success,
+                content: Text(
+                  'Xác nhận nhận hàng thành công! Bạn có thể đánh giá sản phẩm ngay bên dưới.',
+                ),
+              ),
+            );
+          } else {
+            final error = ref.read(orderActionControllerProvider).error;
+            final message = error is AppException
+                ? error.message
+                : 'Không thể xác nhận nhận hàng. Vui lòng thử lại sau.';
+            messenger?.showSnackBar(
+              SnackBar(
+                content: Text(message),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            SnackBar(
+              content: Text('Đã xảy ra lỗi khi xác nhận nhận hàng: $e'),
+              backgroundColor: AppColors.error,
             ),
-          ),
-        );
+          );
+        }
       }
     }
   }

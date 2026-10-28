@@ -132,26 +132,38 @@ class OrdersScreen extends ConsumerWidget {
     final reason = await CancelOrderDialog.show(context, order.orderCode);
     if (reason == null || !context.mounted) return;
 
-    final success = await ref
-        .read(orderActionControllerProvider.notifier)
-        .cancelOrder(orderCode: order.orderCode, reason: reason);
+    try {
+      final success = await ref
+          .read(orderActionControllerProvider.notifier)
+          .cancelOrder(orderCode: order.orderCode, reason: reason);
 
-    if (context.mounted) {
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Đã hủy đơn hàng thành công.'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-      } else {
-        final error = ref.read(orderActionControllerProvider).error;
-        final message = error is AppException
-            ? error.message
-            : 'Không thể hủy đơn hàng. Vui lòng thử lại sau.';
-        ScaffoldMessenger.of(context).showSnackBar(
+      if (context.mounted) {
+        final messenger = ScaffoldMessenger.maybeOf(context);
+        if (success) {
+          messenger?.showSnackBar(
+            const SnackBar(
+              content: Text('Đã hủy đơn hàng thành công.'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        } else {
+          final error = ref.read(orderActionControllerProvider).error;
+          final message = error is AppException
+              ? error.message
+              : 'Không thể hủy đơn hàng. Vui lòng thử lại sau.';
+          messenger?.showSnackBar(
+            SnackBar(
+              content: Text(message),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(
-            content: Text(message),
+            content: Text('Đã xảy ra lỗi khi hủy đơn hàng: $e'),
             backgroundColor: AppColors.error,
           ),
         );

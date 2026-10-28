@@ -67,7 +67,7 @@ final adminOrdersProvider = FutureProvider.autoDispose<List<Order>>((ref) async 
 
 /// Controller xử lý các tác vụ thay đổi đơn hàng (Hủy đơn, Cập nhật trạng thái, Đối soát COD)
 final orderActionControllerProvider =
-    StateNotifierProvider.autoDispose<OrderActionController, AsyncValue<String?>>((ref) {
+    StateNotifierProvider<OrderActionController, AsyncValue<String?>>((ref) {
   final repo = ref.watch(ordersRepositoryProvider);
   return OrderActionController(ref, repo);
 });
