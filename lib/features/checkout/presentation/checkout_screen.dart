@@ -194,6 +194,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
         if (!mounted) return;
         ref.read(checkoutControllerProvider.notifier).reset();
+        ref
+            .read(selectedCartItemIdsProvider.notifier)
+            .removeItems(items.map((i) => i.id));
         await ref.read(cartNotifierProvider.notifier).loadCart();
 
         if (!mounted) return;
@@ -270,7 +273,25 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             );
           }
 
-          final subtotal = ref.watch(cartSubtotalProvider);
+          final selectedItems = ref.watch(selectedCartItemsProvider);
+          if (selectedItems.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    vertical: AppDimensions.space64),
+                child: EmptyStateView(
+                  icon: Icons.check_box_outline_blank,
+                  title: 'Chưa có sản phẩm nào được chọn',
+                  description:
+                      'Vui lòng quay lại giỏ hàng và tick chọn các sản phẩm bạn muốn đặt hàng.',
+                  actionLabel: 'Quay lại giỏ hàng',
+                  onAction: () => context.go(RouteNames.cartPath),
+                ),
+              ),
+            );
+          }
+
+          final subtotal = ref.watch(selectedCartSubtotalProvider);
           final shippingFeeAsync = ref.watch(defaultShippingFeeProvider);
           final shippingFee = shippingFeeAsync.valueOrNull ?? 20000;
           final totalAmount = subtotal + shippingFee;
@@ -284,7 +305,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               if (isDesktop) {
                 return _buildDesktopCheckout(
                   context,
-                  items,
+                  selectedItems,
                   subtotal,
                   shippingFee,
                   totalAmount,
@@ -293,7 +314,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               }
               return _buildMobileCheckout(
                 context,
-                items,
+                selectedItems,
                 subtotal,
                 shippingFee,
                 totalAmount,

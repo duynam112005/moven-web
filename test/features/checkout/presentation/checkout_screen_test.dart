@@ -264,6 +264,30 @@ void main() {
       expect(find.byType(OrderSuccessDialog), findsNothing);
       expect(find.text('Orders Page'), findsOneWidget);
     });
+
+    testWidgets(
+        'Hiển thị thông báo khi chưa có sản phẩm nào trong giỏ được tick chọn',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          overrides: [
+            isAuthenticatedProvider.overrideWithValue(true),
+            currentUserProvider.overrideWithValue(mockUser),
+            cartNotifierProvider.overrideWith(
+              (ref) => _MockCartNotifier(AsyncValue.data([sampleItem])),
+            ),
+            selectedCartItemIdsProvider.overrideWith(
+              (ref) => SelectedCartItemIdsNotifier(<String>{}),
+            ),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Chưa có sản phẩm nào được chọn'), findsOneWidget);
+      expect(find.text('Quay lại giỏ hàng'), findsOneWidget);
+    });
   });
 }
 

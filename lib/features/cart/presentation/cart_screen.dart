@@ -76,29 +76,32 @@ class CartScreen extends ConsumerWidget {
             );
           }
 
-          final subtotal = ref.watch(cartSubtotalProvider);
-          const estimatedShippingFee = 20000;
-          final total = subtotal + estimatedShippingFee;
-          final hasOutOfStock = items.any((item) => !item.inStock);
+          final selectedSubtotal = ref.watch(selectedCartSubtotalProvider);
+          final selectedCount = ref.watch(selectedCartItemCountProvider);
+          final estimatedShippingFee = selectedCount > 0 ? 20000 : 0;
+          final total = selectedSubtotal + estimatedShippingFee;
+          final hasOutOfStockInCart = items.any((item) => !item.inStock);
 
           return ResponsiveLayout(
             mobile: _buildMobileLayout(
               context,
               ref,
               items,
-              subtotal,
+              selectedSubtotal,
               estimatedShippingFee,
               total,
-              hasOutOfStock,
+              selectedCount,
+              hasOutOfStockInCart,
             ),
             desktop: _buildDesktopLayout(
               context,
               ref,
               items,
-              subtotal,
+              selectedSubtotal,
               estimatedShippingFee,
               total,
-              hasOutOfStock,
+              selectedCount,
+              hasOutOfStockInCart,
             ),
           );
         },
@@ -113,7 +116,8 @@ class CartScreen extends ConsumerWidget {
     int subtotal,
     int shippingFee,
     int total,
-    bool hasOutOfStock,
+    int selectedCount,
+    bool hasOutOfStockInCart,
   ) {
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -148,7 +152,8 @@ class CartScreen extends ConsumerWidget {
                       subtotal,
                       shippingFee,
                       total,
-                      hasOutOfStock,
+                      selectedCount,
+                      hasOutOfStockInCart,
                     ),
                   ),
                 ],
@@ -167,7 +172,8 @@ class CartScreen extends ConsumerWidget {
     int subtotal,
     int shippingFee,
     int total,
-    bool hasOutOfStock,
+    int selectedCount,
+    bool hasOutOfStockInCart,
   ) {
     return Padding(
       padding: const EdgeInsets.all(AppDimensions.space16),
@@ -186,7 +192,8 @@ class CartScreen extends ConsumerWidget {
             subtotal,
             shippingFee,
             total,
-            hasOutOfStock,
+            selectedCount,
+            hasOutOfStockInCart,
           ),
         ],
       ),
@@ -198,15 +205,130 @@ class CartScreen extends ConsumerWidget {
     WidgetRef ref,
     List<CartItemModel> items,
   ) {
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: items.length,
-      separatorBuilder: (_, _) => const Divider(height: AppDimensions.space24),
-      itemBuilder: (context, index) {
-        final item = items[index];
-        return _CartItemTile(item: item);
-      },
+    final isAllSelected = ref.watch(isAllCartItemsSelectedProvider);
+    final inStockCount = items.where((i) => i.inStock).length;
+    final selectedCount = ref.watch(selectedCartItemCountProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSelectionHeaderBar(
+          context,
+          ref,
+          items,
+          isAllSelected,
+          inStockCount,
+          selectedCount,
+        ),
+        const SizedBox(height: AppDimensions.space16),
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: items.length,
+          separatorBuilder: (_, _) => const Divider(height: AppDimensions.space24),
+          itemBuilder: (context, index) {
+            final item = items[index];
+            return _CartItemTile(item: item);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSelectionHeaderBar(
+    BuildContext context,
+    WidgetRef ref,
+    List<CartItemModel> items,
+    bool isAllSelected,
+    int inStockCount,
+    int selectedCount,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.space16,
+        vertical: AppDimensions.space12,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppDimensions.radius8),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Checkbox(
+            value: isAllSelected,
+            activeColor: AppColors.primary,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+            ),
+            onChanged: inStockCount == 0
+                ? null
+                : (bool? val) {
+                    if (isAllSelected) {
+                      ref
+                          .read(selectedCartItemIdsProvider.notifier)
+                          .deselectAll();
+                    } else {
+                      ref
+                          .read(selectedCartItemIdsProvider.notifier)
+                          .selectAll(items);
+                    }
+                  },
+          ),
+          const SizedBox(width: AppDimensions.space8),
+          Flexible(
+            child: InkWell(
+              onTap: inStockCount == 0
+                  ? null
+                  : () {
+                      if (isAllSelected) {
+                        ref
+                            .read(selectedCartItemIdsProvider.notifier)
+                            .deselectAll();
+                      } else {
+                        ref
+                            .read(selectedCartItemIdsProvider.notifier)
+                            .selectAll(items);
+                      }
+                    },
+              child: Text(
+                'Chọn tất cả ($inStockCount)',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.titleMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: inStockCount == 0
+                      ? AppColors.textMuted
+                      : AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: AppDimensions.space8),
+          if (selectedCount > 0) ...[
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.textMuted,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimensions.space8),
+              ),
+              onPressed: () =>
+                  ref.read(selectedCartItemIdsProvider.notifier).deselectAll(),
+              child: const Text('Bỏ chọn tất cả'),
+            ),
+            const SizedBox(width: AppDimensions.space8),
+          ],
+          Text(
+            'Đã chọn: $selectedCount',
+            style: AppTypography.bodySmall.copyWith(
+              color: selectedCount > 0
+                  ? AppColors.primary
+                  : AppColors.textMuted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -215,7 +337,8 @@ class CartScreen extends ConsumerWidget {
     int subtotal,
     int shippingFee,
     int total,
-    bool hasOutOfStock,
+    int selectedCount,
+    bool hasOutOfStockInCart,
   ) {
     return Container(
       padding: const EdgeInsets.all(AppDimensions.space24),
@@ -235,8 +358,9 @@ class CartScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Flexible(
-                child: Text('Tạm tính:', style: AppTypography.bodyMedium),
+              Text(
+                'Tạm tính ($selectedCount sản phẩm):',
+                style: AppTypography.bodyMedium,
               ),
               const SizedBox(width: AppDimensions.space8),
               Flexible(
@@ -291,22 +415,22 @@ class CartScreen extends ConsumerWidget {
             style: AppTypography.bodySmall,
           ),
           const SizedBox(height: AppDimensions.space24),
-          if (hasOutOfStock) ...[
+          if (hasOutOfStockInCart) ...[
             Container(
               padding: const EdgeInsets.all(AppDimensions.space12),
               decoration: BoxDecoration(
-                color: AppColors.error.withValues(alpha: 0.1),
+                color: AppColors.error.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(AppDimensions.radius8),
-                border: Border.all(color: AppColors.error),
+                border:
+                    Border.all(color: AppColors.error.withValues(alpha: 0.3)),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.warning_amber_rounded,
-                      color: AppColors.error, size: 20),
+                  Icon(Icons.info_outline, color: AppColors.error, size: 20),
                   SizedBox(width: AppDimensions.space8),
                   Expanded(
                     child: Text(
-                      'Có sản phẩm trong giỏ đã hết hàng hoặc không đủ số lượng. Vui lòng điều chỉnh trước khi đặt hàng.',
+                      'Có sản phẩm trong giỏ đã hết hàng hoặc không đủ tồn kho nên không thể tick chọn.',
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.error,
@@ -319,12 +443,42 @@ class CartScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AppDimensions.space16),
           ],
+          if (selectedCount == 0) ...[
+            Container(
+              padding: const EdgeInsets.all(AppDimensions.space12),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(AppDimensions.radius8),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.check_box_outlined,
+                      color: AppColors.textMuted, size: 20),
+                  SizedBox(width: AppDimensions.space8),
+                  Expanded(
+                    child: Text(
+                      'Vui lòng tick chọn ít nhất 1 sản phẩm để tiến hành đặt hàng.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppDimensions.space16),
+          ],
           AppButton(
-            label: 'Tiến hành đặt hàng COD',
+            label: selectedCount > 0
+                ? 'Tiến hành đặt hàng COD ($selectedCount)'
+                : 'Tiến hành đặt hàng COD',
             icon: const Icon(Icons.arrow_forward, size: 18),
             isFullWidth: true,
             height: AppDimensions.buttonHeightLg,
-            onPressed: hasOutOfStock
+            onPressed: selectedCount == 0
                 ? null
                 : () => context.push(RouteNames.checkoutPath),
           ),
@@ -342,18 +496,44 @@ class _CartItemTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isSelected = ref.watch(
+      selectedCartItemIdsProvider.select((ids) => ids.contains(item.id)),
+    );
+
     return Container(
       padding: const EdgeInsets.all(AppDimensions.space12),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppDimensions.radius8),
         border: Border.all(
-          color: item.inStock ? AppColors.border : AppColors.error,
+          color: !item.inStock
+              ? AppColors.error.withValues(alpha: 0.5)
+              : (isSelected ? AppColors.primary : AppColors.border),
+          width: (item.inStock && isSelected) ? 1.5 : 1.0,
         ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Checkbox chọn sản phẩm thanh toán
+          Padding(
+            padding: const EdgeInsets.only(
+              top: AppDimensions.space24,
+              right: AppDimensions.space8,
+            ),
+            child: Checkbox(
+              value: item.inStock && isSelected,
+              activeColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4),
+              ),
+              onChanged: item.inStock
+                  ? (_) => ref
+                      .read(selectedCartItemIdsProvider.notifier)
+                      .toggle(item.id)
+                  : null,
+            ),
+          ),
           ClipRRect(
             borderRadius: BorderRadius.circular(AppDimensions.radius8),
             child: Container(
