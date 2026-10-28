@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:moven/core/constants/app_colors.dart';
 import 'package:moven/core/constants/app_dimensions.dart';
 import 'package:moven/core/constants/app_typography.dart';
+import 'package:moven/core/errors/app_exception.dart';
 import 'package:moven/core/router/route_names.dart';
 import 'package:moven/core/utils/currency_formatter.dart';
 import 'package:moven/core/utils/responsive_layout.dart';
@@ -383,7 +384,7 @@ class _OrderDetailView extends ConsumerWidget {
                   ),
                 ),
                 OutlinedButton(
-                  onPressed: () => CancelOrderDialog.show(context, order.orderCode),
+                  onPressed: () => _handleCustomerCancelOrder(context, ref, order),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.error,
                     side: const BorderSide(color: AppColors.error),
@@ -473,6 +474,41 @@ class _OrderDetailView extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _handleCustomerCancelOrder(
+    BuildContext context,
+    WidgetRef ref,
+    Order order,
+  ) async {
+    final reason = await CancelOrderDialog.show(context, order.orderCode);
+    if (reason == null || !context.mounted) return;
+
+    final success = await ref
+        .read(orderActionControllerProvider.notifier)
+        .cancelOrder(orderCode: order.orderCode, reason: reason);
+
+    if (context.mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã hủy đơn hàng thành công.'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      } else {
+        final error = ref.read(orderActionControllerProvider).error;
+        final message = error is AppException
+            ? error.message
+            : 'Không thể hủy đơn hàng. Vui lòng thử lại sau.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _showConfirmDeliveryDialog(

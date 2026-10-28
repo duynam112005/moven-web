@@ -216,6 +216,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   children: [
                     // Profile section
                     _buildProfileCard(profile),
+                    const SizedBox(height: AppDimensions.space24),
+
+                    // Quick Orders section
+                    _buildOrdersQuickCard(context),
                     const SizedBox(height: AppDimensions.space32),
 
                     // Address section
@@ -236,6 +240,69 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ],
                 );
               },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrdersQuickCard(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppDimensions.radius12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => context.goNamed(RouteNames.orders),
+          borderRadius: BorderRadius.circular(AppDimensions.radius12),
+          child: Padding(
+            padding: const EdgeInsets.all(AppDimensions.space20),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppDimensions.space12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(AppDimensions.radius8),
+                  ),
+                  child: const Icon(
+                    Icons.receipt_long_outlined,
+                    color: AppColors.primary,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: AppDimensions.space16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Đơn hàng của tôi',
+                        style: AppTypography.titleMedium.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Theo dõi tiến trình vận chuyển COD, xem lịch sử mua sắm và chi tiết đơn hàng',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: AppColors.textSecondary,
+                ),
+              ],
             ),
           ),
         ),

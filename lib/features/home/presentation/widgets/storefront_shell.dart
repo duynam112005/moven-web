@@ -129,6 +129,14 @@ class StorefrontShell extends ConsumerWidget {
 
                       const Spacer(),
 
+                      // Nút truy cập nhanh Đơn hàng của tôi
+                      IconButton(
+                        tooltip: 'Đơn hàng của tôi',
+                        icon: const Icon(Icons.receipt_long_outlined, size: 22),
+                        onPressed: () => context.goNamed(RouteNames.orders),
+                      ),
+                      const SizedBox(width: AppDimensions.space4),
+
                       // Cart Icon with dynamic item count badge
                       Consumer(
                         builder: (context, ref, _) {
@@ -209,6 +217,8 @@ class StorefrontShell extends ConsumerWidget {
       onSelected: (value) async {
         if (value == 'admin') {
           context.go(RouteNames.adminDashboardPath);
+        } else if (value == 'orders') {
+          context.goNamed(RouteNames.orders);
         } else if (value == 'profile') {
           context.goNamed(RouteNames.profile);
         } else if (value == 'logout') {
@@ -280,6 +290,16 @@ class StorefrontShell extends ConsumerWidget {
           ),
           const PopupMenuDivider(),
         ],
+        const PopupMenuItem(
+          value: 'orders',
+          child: Row(
+            children: [
+              Icon(Icons.receipt_long_outlined, size: 18),
+              SizedBox(width: 8),
+              Text('Đơn hàng của tôi'),
+            ],
+          ),
+        ),
         const PopupMenuItem(
           value: 'profile',
           child: Row(
@@ -432,6 +452,11 @@ class StorefrontShell extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: AppDimensions.space12),
+                        _buildFooterLink(
+                          context,
+                          'Đơn hàng của tôi',
+                          () => context.goNamed(RouteNames.orders),
+                        ),
                         _buildFooterLink(
                           context,
                           'Liên hệ chúng tôi',

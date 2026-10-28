@@ -4,11 +4,13 @@ import 'package:go_router/go_router.dart';
 import 'package:moven/core/constants/app_colors.dart';
 import 'package:moven/core/constants/app_dimensions.dart';
 import 'package:moven/core/constants/app_typography.dart';
+import 'package:moven/core/errors/app_exception.dart';
 import 'package:moven/core/router/route_names.dart';
 import 'package:moven/core/utils/responsive_layout.dart';
 import 'package:moven/core/widgets/app_loading.dart';
 import 'package:moven/core/widgets/empty_state_view.dart';
 import 'package:moven/core/widgets/error_state_view.dart';
+import 'package:moven/features/orders/domain/models/order.dart';
 import 'package:moven/features/orders/domain/models/order_status.dart';
 import 'package:moven/features/orders/presentation/providers/orders_providers.dart';
 import 'widgets/cancel_order_dialog.dart';
@@ -103,11 +105,11 @@ class OrdersScreen extends ConsumerWidget {
                       separatorBuilder: (_, _) =>
                           const SizedBox(height: AppDimensions.space16),
                       itemBuilder: (context, index) {
-                        final order = orders[index];
+                        final order = orders[index] as Order;
                         return OrderCard(
                           order: order,
                           onCancelPressed: order.status.canCustomerCancel
-                              ? () => CancelOrderDialog.show(context, order.orderCode)
+                              ? () => _handleCancelOrder(context, ref, order)
                               : null,
                         );
                       },
@@ -120,6 +122,41 @@ class OrdersScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _handleCancelOrder(
+    BuildContext context,
+    WidgetRef ref,
+    Order order,
+  ) async {
+    final reason = await CancelOrderDialog.show(context, order.orderCode);
+    if (reason == null || !context.mounted) return;
+
+    final success = await ref
+        .read(orderActionControllerProvider.notifier)
+        .cancelOrder(orderCode: order.orderCode, reason: reason);
+
+    if (context.mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã hủy đơn hàng thành công.'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      } else {
+        final error = ref.read(orderActionControllerProvider).error;
+        final message = error is AppException
+            ? error.message
+            : 'Không thể hủy đơn hàng. Vui lòng thử lại sau.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildFilterTabs(WidgetRef ref, OrderStatus? currentFilter) {

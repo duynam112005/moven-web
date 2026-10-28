@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:moven/core/constants/app_colors.dart';
 import 'package:moven/core/constants/app_dimensions.dart';
 import 'package:moven/core/constants/app_typography.dart';
-import 'package:moven/features/orders/presentation/providers/orders_providers.dart';
 
-/// Hộp thoại xác nhận hủy đơn hàng kèm lựa chọn lý do sinh động
-class CancelOrderDialog extends ConsumerStatefulWidget {
+/// Hộp thoại xác nhận hủy đơn hàng kèm lựa chọn lý do sinh động.
+/// Trả về chuỗi lý do hủy nếu người dùng xác nhận, hoặc null nếu người dùng hủy bỏ.
+class CancelOrderDialog extends StatefulWidget {
   final String orderCode;
 
   const CancelOrderDialog({
@@ -14,8 +13,9 @@ class CancelOrderDialog extends ConsumerStatefulWidget {
     required this.orderCode,
   });
 
-  static Future<bool?> show(BuildContext context, String orderCode) {
-    return showDialog<bool>(
+  /// Hiển thị hộp thoại và trả về lý do hủy đã chọn (hoặc null nếu đóng/hủy)
+  static Future<String?> show(BuildContext context, String orderCode) {
+    return showDialog<String>(
       context: context,
       barrierDismissible: false,
       builder: (_) => CancelOrderDialog(orderCode: orderCode),
@@ -23,10 +23,10 @@ class CancelOrderDialog extends ConsumerStatefulWidget {
   }
 
   @override
-  ConsumerState<CancelOrderDialog> createState() => _CancelOrderDialogState();
+  State<CancelOrderDialog> createState() => _CancelOrderDialogState();
 }
 
-class _CancelOrderDialogState extends ConsumerState<CancelOrderDialog> {
+class _CancelOrderDialogState extends State<CancelOrderDialog> {
   static const List<String> _predefinedReasons = [
     'Muốn thay đổi sản phẩm / kích cỡ / màu sắc',
     'Nhập sai địa chỉ nhận hàng hoặc số điện thoại',
@@ -37,7 +37,7 @@ class _CancelOrderDialogState extends ConsumerState<CancelOrderDialog> {
 
   String _selectedReason = _predefinedReasons[0];
   final _otherReasonController = TextEditingController();
-  bool _isSubmitting = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -45,51 +45,19 @@ class _CancelOrderDialogState extends ConsumerState<CancelOrderDialog> {
     super.dispose();
   }
 
-  Future<void> _handleConfirm() async {
+  void _handleConfirm() {
     final effectiveReason = _selectedReason == 'Lý do khác...'
         ? _otherReasonController.text.trim()
         : _selectedReason;
 
     if (effectiveReason.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng nhập rõ lý do hủy đơn hàng của bạn.'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      setState(() {
+        _errorMessage = 'Vui lòng nhập rõ lý do hủy đơn hàng của bạn.';
+      });
       return;
     }
 
-    setState(() => _isSubmitting = true);
-
-    final success = await ref
-        .read(orderActionControllerProvider.notifier)
-        .cancelOrder(
-          orderCode: widget.orderCode,
-          reason: effectiveReason,
-        );
-
-    if (mounted) {
-      setState(() => _isSubmitting = false);
-      if (success) {
-        Navigator.of(context).pop(true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Đã hủy đơn hàng thành công.'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-      } else {
-        final error = ref.read(orderActionControllerProvider).error?.toString() ??
-            'Không thể hủy đơn hàng. Vui lòng thử lại sau.';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-    }
+    Navigator.of(context).pop(effectiveReason);
   }
 
   @override
@@ -161,9 +129,12 @@ class _CancelOrderDialogState extends ConsumerState<CancelOrderDialog> {
               ..._predefinedReasons.map((reason) {
                 final isSelected = _selectedReason == reason;
                 return InkWell(
-                  onTap: _isSubmitting
-                      ? null
-                      : () => setState(() => _selectedReason = reason),
+                  onTap: () {
+                    setState(() {
+                      _selectedReason = reason;
+                      _errorMessage = null;
+                    });
+                  },
                   borderRadius: BorderRadius.circular(AppDimensions.radius8),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
@@ -224,6 +195,11 @@ class _CancelOrderDialogState extends ConsumerState<CancelOrderDialog> {
                   child: TextField(
                     controller: _otherReasonController,
                     maxLines: 2,
+                    onChanged: (_) {
+                      if (_errorMessage != null) {
+                        setState(() => _errorMessage = null);
+                      }
+                    },
                     decoration: InputDecoration(
                       hintText: 'Nhập lý do cụ thể của bạn...',
                       filled: true,
@@ -242,6 +218,26 @@ class _CancelOrderDialogState extends ConsumerState<CancelOrderDialog> {
                 ),
               ),
 
+              // Inline validation error message
+              if (_errorMessage != null) ...[
+                const SizedBox(height: AppDimensions.space8),
+                Row(
+                  children: [
+                    const Icon(Icons.error_outline, size: 16, color: AppColors.error),
+                    const SizedBox(width: AppDimensions.space6),
+                    Expanded(
+                      child: Text(
+                        _errorMessage!,
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+
               const SizedBox(height: AppDimensions.space24),
 
               // Action Buttons
@@ -249,9 +245,7 @@ class _CancelOrderDialogState extends ConsumerState<CancelOrderDialog> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
-                    onPressed: _isSubmitting
-                        ? null
-                        : () => Navigator.of(context).pop(false),
+                    onPressed: () => Navigator.of(context).pop(null),
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.textSecondary,
                       padding: const EdgeInsets.symmetric(
@@ -263,7 +257,7 @@ class _CancelOrderDialogState extends ConsumerState<CancelOrderDialog> {
                   ),
                   const SizedBox(width: AppDimensions.space12),
                   ElevatedButton(
-                    onPressed: _isSubmitting ? null : _handleConfirm,
+                    onPressed: _handleConfirm,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.error,
                       foregroundColor: AppColors.onError,
@@ -275,19 +269,10 @@ class _CancelOrderDialogState extends ConsumerState<CancelOrderDialog> {
                         borderRadius: BorderRadius.circular(AppDimensions.radius8),
                       ),
                     ),
-                    child: _isSubmitting
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppColors.onError,
-                            ),
-                          )
-                        : const Text(
-                            'Xác nhận hủy',
-                            style: TextStyle(fontWeight: FontWeight.w600),
-                          ),
+                    child: const Text(
+                      'Xác nhận hủy',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
                   ),
                 ],
               ),

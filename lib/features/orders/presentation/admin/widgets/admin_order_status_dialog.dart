@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:moven/core/constants/app_colors.dart';
 import 'package:moven/core/constants/app_dimensions.dart';
 import 'package:moven/core/constants/app_typography.dart';
+import 'package:moven/core/errors/app_exception.dart';
 import 'package:moven/features/orders/domain/models/order.dart';
 import 'package:moven/features/orders/domain/models/order_status.dart';
 import 'package:moven/features/orders/presentation/providers/orders_providers.dart';
@@ -49,6 +50,9 @@ class _AdminOrderStatusDialogState
   }
 
   Future<void> _handleConfirm() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final nav = Navigator.of(context);
+
     setState(() => _isSubmitting = true);
 
     final success = await ref
@@ -65,8 +69,8 @@ class _AdminOrderStatusDialogState
     if (mounted) {
       setState(() => _isSubmitting = false);
       if (success) {
-        Navigator.of(context).pop(true);
-        ScaffoldMessenger.of(context).showSnackBar(
+        nav.pop(true);
+        messenger.showSnackBar(
           SnackBar(
             content: Text(
               'Đã cập nhật trạng thái đơn ${widget.order.orderCode} sang "${_selectedStatus.displayName}"',
@@ -75,11 +79,13 @@ class _AdminOrderStatusDialogState
           ),
         );
       } else {
-        final error = ref.read(orderActionControllerProvider).error?.toString() ??
-            'Cập nhật trạng thái thất bại.';
-        ScaffoldMessenger.of(context).showSnackBar(
+        final error = ref.read(orderActionControllerProvider).error;
+        final message = error is AppException
+            ? error.message
+            : 'Cập nhật trạng thái thất bại.';
+        messenger.showSnackBar(
           SnackBar(
-            content: Text(error),
+            content: Text(message),
             backgroundColor: AppColors.error,
           ),
         );
