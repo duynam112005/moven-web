@@ -24,9 +24,12 @@ mixin _$OrderStatusHistory {
   String get id => throw _privateConstructorUsedError;
   @JsonKey(name: 'order_id')
   String get orderId => throw _privateConstructorUsedError;
-  @JsonKey(name: 'from_status')
+  @JsonKey(
+    name: 'from_status',
+    unknownEnumValue: OrderStatus.pendingConfirmation,
+  )
   OrderStatus? get fromStatus => throw _privateConstructorUsedError;
-  @JsonKey(name: 'to_status')
+  @JsonKey(name: 'to_status', unknownEnumValue: OrderStatus.pendingConfirmation)
   OrderStatus get toStatus => throw _privateConstructorUsedError;
   @JsonKey(name: 'actor_id')
   String? get actorId => throw _privateConstructorUsedError;
@@ -54,8 +57,16 @@ abstract class $OrderStatusHistoryCopyWith<$Res> {
   $Res call({
     String id,
     @JsonKey(name: 'order_id') String orderId,
-    @JsonKey(name: 'from_status') OrderStatus? fromStatus,
-    @JsonKey(name: 'to_status') OrderStatus toStatus,
+    @JsonKey(
+      name: 'from_status',
+      unknownEnumValue: OrderStatus.pendingConfirmation,
+    )
+    OrderStatus? fromStatus,
+    @JsonKey(
+      name: 'to_status',
+      unknownEnumValue: OrderStatus.pendingConfirmation,
+    )
+    OrderStatus toStatus,
     @JsonKey(name: 'actor_id') String? actorId,
     String? note,
     @JsonKey(name: 'created_at') DateTime createdAt,
@@ -133,8 +144,16 @@ abstract class _$$OrderStatusHistoryImplCopyWith<$Res>
   $Res call({
     String id,
     @JsonKey(name: 'order_id') String orderId,
-    @JsonKey(name: 'from_status') OrderStatus? fromStatus,
-    @JsonKey(name: 'to_status') OrderStatus toStatus,
+    @JsonKey(
+      name: 'from_status',
+      unknownEnumValue: OrderStatus.pendingConfirmation,
+    )
+    OrderStatus? fromStatus,
+    @JsonKey(
+      name: 'to_status',
+      unknownEnumValue: OrderStatus.pendingConfirmation,
+    )
+    OrderStatus toStatus,
     @JsonKey(name: 'actor_id') String? actorId,
     String? note,
     @JsonKey(name: 'created_at') DateTime createdAt,
@@ -204,8 +223,16 @@ class _$OrderStatusHistoryImpl implements _OrderStatusHistory {
   const _$OrderStatusHistoryImpl({
     required this.id,
     @JsonKey(name: 'order_id') required this.orderId,
-    @JsonKey(name: 'from_status') this.fromStatus,
-    @JsonKey(name: 'to_status') required this.toStatus,
+    @JsonKey(
+      name: 'from_status',
+      unknownEnumValue: OrderStatus.pendingConfirmation,
+    )
+    this.fromStatus,
+    @JsonKey(
+      name: 'to_status',
+      unknownEnumValue: OrderStatus.pendingConfirmation,
+    )
+    required this.toStatus,
     @JsonKey(name: 'actor_id') this.actorId,
     this.note,
     @JsonKey(name: 'created_at') required this.createdAt,
@@ -220,10 +247,13 @@ class _$OrderStatusHistoryImpl implements _OrderStatusHistory {
   @JsonKey(name: 'order_id')
   final String orderId;
   @override
-  @JsonKey(name: 'from_status')
+  @JsonKey(
+    name: 'from_status',
+    unknownEnumValue: OrderStatus.pendingConfirmation,
+  )
   final OrderStatus? fromStatus;
   @override
-  @JsonKey(name: 'to_status')
+  @JsonKey(name: 'to_status', unknownEnumValue: OrderStatus.pendingConfirmation)
   final OrderStatus toStatus;
   @override
   @JsonKey(name: 'actor_id')
@@ -290,8 +320,16 @@ abstract class _OrderStatusHistory implements OrderStatusHistory {
   const factory _OrderStatusHistory({
     required final String id,
     @JsonKey(name: 'order_id') required final String orderId,
-    @JsonKey(name: 'from_status') final OrderStatus? fromStatus,
-    @JsonKey(name: 'to_status') required final OrderStatus toStatus,
+    @JsonKey(
+      name: 'from_status',
+      unknownEnumValue: OrderStatus.pendingConfirmation,
+    )
+    final OrderStatus? fromStatus,
+    @JsonKey(
+      name: 'to_status',
+      unknownEnumValue: OrderStatus.pendingConfirmation,
+    )
+    required final OrderStatus toStatus,
     @JsonKey(name: 'actor_id') final String? actorId,
     final String? note,
     @JsonKey(name: 'created_at') required final DateTime createdAt,
@@ -306,10 +344,13 @@ abstract class _OrderStatusHistory implements OrderStatusHistory {
   @JsonKey(name: 'order_id')
   String get orderId;
   @override
-  @JsonKey(name: 'from_status')
+  @JsonKey(
+    name: 'from_status',
+    unknownEnumValue: OrderStatus.pendingConfirmation,
+  )
   OrderStatus? get fromStatus;
   @override
-  @JsonKey(name: 'to_status')
+  @JsonKey(name: 'to_status', unknownEnumValue: OrderStatus.pendingConfirmation)
   OrderStatus get toStatus;
   @override
   @JsonKey(name: 'actor_id')

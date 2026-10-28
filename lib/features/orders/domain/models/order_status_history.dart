@@ -10,8 +10,16 @@ class OrderStatusHistory with _$OrderStatusHistory {
   const factory OrderStatusHistory({
     required String id,
     @JsonKey(name: 'order_id') required String orderId,
-    @JsonKey(name: 'from_status') OrderStatus? fromStatus,
-    @JsonKey(name: 'to_status') required OrderStatus toStatus,
+    @JsonKey(
+      name: 'from_status',
+      unknownEnumValue: OrderStatus.pendingConfirmation,
+    )
+    OrderStatus? fromStatus,
+    @JsonKey(
+      name: 'to_status',
+      unknownEnumValue: OrderStatus.pendingConfirmation,
+    )
+    required OrderStatus toStatus,
     @JsonKey(name: 'actor_id') String? actorId,
     String? note,
     @JsonKey(name: 'created_at') required DateTime createdAt,

@@ -11,8 +11,16 @@ _$OrderStatusHistoryImpl _$$OrderStatusHistoryImplFromJson(
 ) => _$OrderStatusHistoryImpl(
   id: json['id'] as String,
   orderId: json['order_id'] as String,
-  fromStatus: $enumDecodeNullable(_$OrderStatusEnumMap, json['from_status']),
-  toStatus: $enumDecode(_$OrderStatusEnumMap, json['to_status']),
+  fromStatus: $enumDecodeNullable(
+    _$OrderStatusEnumMap,
+    json['from_status'],
+    unknownValue: OrderStatus.pendingConfirmation,
+  ),
+  toStatus: $enumDecode(
+    _$OrderStatusEnumMap,
+    json['to_status'],
+    unknownValue: OrderStatus.pendingConfirmation,
+  ),
   actorId: json['actor_id'] as String?,
   note: json['note'] as String?,
   createdAt: DateTime.parse(json['created_at'] as String),
@@ -31,10 +39,10 @@ Map<String, dynamic> _$$OrderStatusHistoryImplToJson(
 };
 
 const _$OrderStatusEnumMap = {
-  OrderStatus.pendingConfirmation: 'pendingConfirmation',
+  OrderStatus.pendingConfirmation: 'pending_confirmation',
   OrderStatus.shipping: 'shipping',
   OrderStatus.delivered: 'delivered',
-  OrderStatus.deliveryFailed: 'deliveryFailed',
+  OrderStatus.deliveryFailed: 'delivery_failed',
   OrderStatus.cancelled: 'cancelled',
   OrderStatus.returned: 'returned',
 };

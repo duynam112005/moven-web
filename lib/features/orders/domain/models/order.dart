@@ -15,6 +15,7 @@ class Order with _$Order {
     required String id,
     @JsonKey(name: 'order_code') required String orderCode,
     @JsonKey(name: 'user_id') required String userId,
+    @JsonKey(unknownEnumValue: OrderStatus.pendingConfirmation)
     required OrderStatus status,
     @JsonKey(name: 'payment_method') @Default('cod') String paymentMethod,
     @JsonKey(name: 'payment_status') @Default('unpaid') String paymentStatus,

@@ -35,7 +35,7 @@ void main() {
     });
 
     test('customerCancelOrder succeeds on pendingConfirmation order', () async {
-      final targetCode = 'MVN-8A9F1B2C';
+      const targetCode = 'MVN-8A9F1B2C';
       final initialOrder = await repository.getOrderByCode(targetCode);
       expect(initialOrder.status, OrderStatus.pendingConfirmation);
 
@@ -51,7 +51,7 @@ void main() {
     });
 
     test('customerCancelOrder throws ValidationException on shipping order', () async {
-      final targetCode = 'MVN-5E2D3C4B'; // Order with status 'shipping'
+      const targetCode = 'MVN-5E2D3C4B'; // Order with status 'shipping'
       final order = await repository.getOrderByCode(targetCode);
       expect(order.status, OrderStatus.shipping);
 
@@ -60,6 +60,35 @@ void main() {
           orderCode: targetCode,
           reason: 'Muốn hủy',
         ),
+        throwsA(isA<ValidationException>()),
+      );
+    });
+
+    test('customerConfirmDelivery succeeds on shipping order', () async {
+      const targetCode = 'MVN-5E2D3C4B'; // Order with status 'shipping'
+      final initialOrder = await repository.getOrderByCode(targetCode);
+      expect(initialOrder.status, OrderStatus.shipping);
+      expect(initialOrder.status.canCustomerConfirmDelivery, isTrue);
+
+      await repository.customerConfirmDelivery(orderCode: targetCode);
+
+      final updatedOrder = await repository.getOrderByCode(targetCode);
+      expect(updatedOrder.status, OrderStatus.delivered);
+      expect(updatedOrder.deliveredAt, isNotNull);
+      expect(updatedOrder.statusHistory.last.toStatus, OrderStatus.delivered);
+      expect(
+        updatedOrder.statusHistory.last.note,
+        'Khách hàng xác nhận đã nhận được kiện hàng',
+      );
+    });
+
+    test('customerConfirmDelivery throws ValidationException on pendingConfirmation order', () async {
+      const targetCode = 'MVN-8A9F1B2C'; // Order with status 'pendingConfirmation'
+      final order = await repository.getOrderByCode(targetCode);
+      expect(order.status, OrderStatus.pendingConfirmation);
+
+      expect(
+        () => repository.customerConfirmDelivery(orderCode: targetCode),
         throwsA(isA<ValidationException>()),
       );
     });

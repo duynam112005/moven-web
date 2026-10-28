@@ -1,24 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 import '../../../../core/constants/app_colors.dart';
 
 /// Trạng thái giao vận chuẩn của đơn hàng MOVEN (ADR-0001, GLOSSARY.md)
 enum OrderStatus {
   /// Đơn mới tạo thành công, chờ xác nhận đóng gói
+  @JsonValue('pending_confirmation')
   pendingConfirmation('pending_confirmation'),
 
   /// Đã bàn giao cho đơn vị vận chuyển
+  @JsonValue('shipping')
   shipping('shipping'),
 
   /// Giao hàng thành công (dùng tính doanh thu)
+  @JsonValue('delivered')
   delivered('delivered'),
 
   /// Giao hàng thất bại (tồn kho giữ nguyên với shipper, không hoàn kho)
+  @JsonValue('delivery_failed')
   deliveryFailed('delivery_failed'),
 
   /// Đơn bị hủy (chỉ từ pending_confirmation, hoàn kho ngay)
+  @JsonValue('cancelled')
   cancelled('cancelled'),
 
   /// Admin xác nhận đã nhận lại hàng hoàn từ shipper (hoàn kho ngay)
+  @JsonValue('returned')
   returned('returned');
 
   final String value;
@@ -132,6 +139,9 @@ enum OrderStatus {
 
   /// Khách hàng chỉ được phép tự hủy đơn khi đơn ở pendingConfirmation
   bool get canCustomerCancel => this == OrderStatus.pendingConfirmation;
+
+  /// Khách hàng được phép tự xác nhận đã nhận hàng khi đơn đang ở shipping
+  bool get canCustomerConfirmDelivery => this == OrderStatus.shipping;
 
   /// Các trạng thái tiếp theo hợp lệ mà Admin có thể chuyển tới (theo State Machine ADR-0001)
   List<OrderStatus> get validNextStatusesAdmin {

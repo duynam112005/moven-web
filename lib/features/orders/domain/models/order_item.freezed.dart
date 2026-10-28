@@ -26,6 +26,8 @@ mixin _$OrderItem {
   String get orderId => throw _privateConstructorUsedError;
   @JsonKey(name: 'variant_id')
   String? get variantId => throw _privateConstructorUsedError;
+  @JsonKey(name: 'product_id')
+  String? get productId => throw _privateConstructorUsedError;
   @JsonKey(name: 'product_name_snapshot')
   String get productName => throw _privateConstructorUsedError;
   @JsonKey(name: 'sku_snapshot')
@@ -61,6 +63,7 @@ abstract class $OrderItemCopyWith<$Res> {
     String id,
     @JsonKey(name: 'order_id') String orderId,
     @JsonKey(name: 'variant_id') String? variantId,
+    @JsonKey(name: 'product_id') String? productId,
     @JsonKey(name: 'product_name_snapshot') String productName,
     @JsonKey(name: 'sku_snapshot') String sku,
     @JsonKey(name: 'size_snapshot') String? size,
@@ -90,6 +93,7 @@ class _$OrderItemCopyWithImpl<$Res, $Val extends OrderItem>
     Object? id = null,
     Object? orderId = null,
     Object? variantId = freezed,
+    Object? productId = freezed,
     Object? productName = null,
     Object? sku = null,
     Object? size = freezed,
@@ -112,6 +116,10 @@ class _$OrderItemCopyWithImpl<$Res, $Val extends OrderItem>
             variantId: freezed == variantId
                 ? _value.variantId
                 : variantId // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            productId: freezed == productId
+                ? _value.productId
+                : productId // ignore: cast_nullable_to_non_nullable
                       as String?,
             productName: null == productName
                 ? _value.productName
@@ -164,6 +172,7 @@ abstract class _$$OrderItemImplCopyWith<$Res>
     String id,
     @JsonKey(name: 'order_id') String orderId,
     @JsonKey(name: 'variant_id') String? variantId,
+    @JsonKey(name: 'product_id') String? productId,
     @JsonKey(name: 'product_name_snapshot') String productName,
     @JsonKey(name: 'sku_snapshot') String sku,
     @JsonKey(name: 'size_snapshot') String? size,
@@ -192,6 +201,7 @@ class __$$OrderItemImplCopyWithImpl<$Res>
     Object? id = null,
     Object? orderId = null,
     Object? variantId = freezed,
+    Object? productId = freezed,
     Object? productName = null,
     Object? sku = null,
     Object? size = freezed,
@@ -214,6 +224,10 @@ class __$$OrderItemImplCopyWithImpl<$Res>
         variantId: freezed == variantId
             ? _value.variantId
             : variantId // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        productId: freezed == productId
+            ? _value.productId
+            : productId // ignore: cast_nullable_to_non_nullable
                   as String?,
         productName: null == productName
             ? _value.productName
@@ -259,6 +273,7 @@ class _$OrderItemImpl extends _OrderItem {
     required this.id,
     @JsonKey(name: 'order_id') required this.orderId,
     @JsonKey(name: 'variant_id') this.variantId,
+    @JsonKey(name: 'product_id') this.productId,
     @JsonKey(name: 'product_name_snapshot') required this.productName,
     @JsonKey(name: 'sku_snapshot') required this.sku,
     @JsonKey(name: 'size_snapshot') this.size,
@@ -280,6 +295,9 @@ class _$OrderItemImpl extends _OrderItem {
   @override
   @JsonKey(name: 'variant_id')
   final String? variantId;
+  @override
+  @JsonKey(name: 'product_id')
+  final String? productId;
   @override
   @JsonKey(name: 'product_name_snapshot')
   final String productName;
@@ -306,7 +324,7 @@ class _$OrderItemImpl extends _OrderItem {
 
   @override
   String toString() {
-    return 'OrderItem(id: $id, orderId: $orderId, variantId: $variantId, productName: $productName, sku: $sku, size: $size, colorName: $colorName, unitPrice: $unitPrice, quantity: $quantity, lineTotal: $lineTotal, imageUrl: $imageUrl)';
+    return 'OrderItem(id: $id, orderId: $orderId, variantId: $variantId, productId: $productId, productName: $productName, sku: $sku, size: $size, colorName: $colorName, unitPrice: $unitPrice, quantity: $quantity, lineTotal: $lineTotal, imageUrl: $imageUrl)';
   }
 
   @override
@@ -318,6 +336,8 @@ class _$OrderItemImpl extends _OrderItem {
             (identical(other.orderId, orderId) || other.orderId == orderId) &&
             (identical(other.variantId, variantId) ||
                 other.variantId == variantId) &&
+            (identical(other.productId, productId) ||
+                other.productId == productId) &&
             (identical(other.productName, productName) ||
                 other.productName == productName) &&
             (identical(other.sku, sku) || other.sku == sku) &&
@@ -341,6 +361,7 @@ class _$OrderItemImpl extends _OrderItem {
     id,
     orderId,
     variantId,
+    productId,
     productName,
     sku,
     size,
@@ -370,6 +391,7 @@ abstract class _OrderItem extends OrderItem {
     required final String id,
     @JsonKey(name: 'order_id') required final String orderId,
     @JsonKey(name: 'variant_id') final String? variantId,
+    @JsonKey(name: 'product_id') final String? productId,
     @JsonKey(name: 'product_name_snapshot') required final String productName,
     @JsonKey(name: 'sku_snapshot') required final String sku,
     @JsonKey(name: 'size_snapshot') final String? size,
@@ -392,6 +414,9 @@ abstract class _OrderItem extends OrderItem {
   @override
   @JsonKey(name: 'variant_id')
   String? get variantId;
+  @override
+  @JsonKey(name: 'product_id')
+  String? get productId;
   @override
   @JsonKey(name: 'product_name_snapshot')
   String get productName;
