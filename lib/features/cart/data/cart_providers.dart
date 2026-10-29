@@ -17,22 +17,26 @@ final cartRepositoryProvider = Provider<CartRepository?>((ref) {
 class CartNotifier extends StateNotifier<AsyncValue<List<CartItemModel>>> {
   final CartRepository? _repository;
   final Ref _ref;
+  final String? _userId;
 
-  CartNotifier(this._repository, this._ref) : super(const AsyncValue.loading()) {
-    loadCart();
+  CartNotifier(this._repository, this._ref, [this._userId])
+      : super(_userId == null ? const AsyncValue.data([]) : const AsyncValue.loading()) {
+    if (_userId != null) {
+      loadCart();
+    }
   }
 
   /// Nạp giỏ hàng từ Supabase
   Future<void> loadCart() async {
-    final user = _ref.read(currentUserProvider);
-    if (user == null || _repository == null) {
+    final userId = _userId ?? _ref.read(currentUserProvider)?.id;
+    if (userId == null || _repository == null) {
       state = const AsyncValue.data([]);
       return;
     }
 
     try {
       state = const AsyncValue.loading();
-      final items = await _repository.getCartItems(user.id);
+      final items = await _repository.getCartItems(userId);
       state = AsyncValue.data(items);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -96,9 +100,9 @@ class CartNotifier extends StateNotifier<AsyncValue<List<CartItemModel>>> {
 
     try {
       await _repository.updateQuantity(itemId: itemId, quantity: quantity);
-      final user = _ref.read(currentUserProvider);
-      if (user != null) {
-        final freshItems = await _repository.getCartItems(user.id);
+      final userId = _userId ?? _ref.read(currentUserProvider)?.id;
+      if (userId != null) {
+        final freshItems = await _repository.getCartItems(userId);
         state = AsyncValue.data(freshItems);
       }
     } catch (e, st) {
@@ -118,9 +122,9 @@ class CartNotifier extends StateNotifier<AsyncValue<List<CartItemModel>>> {
 
     try {
       await _repository.removeItem(itemId);
-      final user = _ref.read(currentUserProvider);
-      if (user != null) {
-        final freshItems = await _repository.getCartItems(user.id);
+      final userId = _userId ?? _ref.read(currentUserProvider)?.id;
+      if (userId != null) {
+        final freshItems = await _repository.getCartItems(userId);
         state = AsyncValue.data(freshItems);
       }
     } catch (e, st) {
@@ -132,9 +136,9 @@ class CartNotifier extends StateNotifier<AsyncValue<List<CartItemModel>>> {
   /// Dọn sạch giỏ
   Future<void> clearCart() async {
     state = const AsyncValue.data([]);
-    final user = _ref.read(currentUserProvider);
-    if (user == null || _repository == null) return;
-    await _repository.clearCart(user.id);
+    final userId = _userId ?? _ref.read(currentUserProvider)?.id;
+    if (userId == null || _repository == null) return;
+    await _repository.clearCart(userId);
   }
 }
 
@@ -142,7 +146,8 @@ class CartNotifier extends StateNotifier<AsyncValue<List<CartItemModel>>> {
 final cartNotifierProvider =
     StateNotifierProvider<CartNotifier, AsyncValue<List<CartItemModel>>>((ref) {
   final repo = ref.watch(cartRepositoryProvider);
-  return CartNotifier(repo, ref);
+  final user = ref.watch(currentUserProvider);
+  return CartNotifier(repo, ref, user?.id);
 });
 
 /// Provider tính tổng số lượng các mặt hàng trong giỏ (cho Badge trên Header)
@@ -246,6 +251,8 @@ class SelectedCartItemIdsNotifier extends StateNotifier<Set<String>> {
 /// Provider cung cấp StateNotifier của danh sách ID sản phẩm được chọn
 final selectedCartItemIdsProvider =
     StateNotifierProvider<SelectedCartItemIdsNotifier, Set<String>>((ref) {
+  // Đồng bộ dọn dẹp hoặc khởi tạo lại danh sách chọn khi tài khoản thay đổi / đăng xuất
+  ref.watch(currentUserProvider);
   final notifier = SelectedCartItemIdsNotifier();
 
   // Khởi tạo ngay nếu cartNotifierProvider đã có sẵn dữ liệu
