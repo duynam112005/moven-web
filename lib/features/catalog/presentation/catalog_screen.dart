@@ -20,29 +20,82 @@ class CatalogScreen extends ConsumerStatefulWidget {
 }
 
 class _CatalogScreenState extends ConsumerState<CatalogScreen> {
-  final _searchController = TextEditingController();
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    final filter = ref.read(catalogFilterProvider);
+    final lastTimestamp = ref.read(catalogSearchTimestampProvider);
+    final isExpired =
+        filter.searchKeyword != null && isCatalogSearchExpired(lastTimestamp);
+
+    final initialKeyword = isExpired ? '' : (filter.searchKeyword ?? '');
+    _searchController = TextEditingController(text: initialKeyword);
+    _searchController.addListener(_onSearchControllerChanged);
+
+    if (isExpired) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref.read(catalogFilterProvider.notifier).state =
+              ref.read(catalogFilterProvider).copyWith(searchKeyword: null);
+          ref.read(catalogSearchTimestampProvider.notifier).state = null;
+          ref.read(catalogPageProvider.notifier).state = 1;
+        }
+      });
+    }
+  }
+
+  void _onSearchControllerChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
 
   @override
   void dispose() {
+    _searchController.removeListener(_onSearchControllerChanged);
     _searchController.dispose();
     super.dispose();
   }
 
   void _onSearchSubmitted(String value) {
+    final trimmed = value.trim();
     final current = ref.read(catalogFilterProvider);
-    ref.read(catalogFilterProvider.notifier).state = current.copyWith(
-      searchKeyword: value.trim().isEmpty ? null : value.trim(),
-    );
-    ref.read(catalogPageProvider.notifier).state = 1;
+    final newKeyword = trimmed.isEmpty ? null : trimmed;
+    if (current.searchKeyword != newKeyword) {
+      ref.read(catalogFilterProvider.notifier).state = current.copyWith(
+        searchKeyword: newKeyword,
+      );
+      ref.read(catalogSearchTimestampProvider.notifier).state =
+          newKeyword != null ? DateTime.now() : null;
+      ref.read(catalogPageProvider.notifier).state = 1;
+    }
+  }
+
+  void _onSearchChanged(String value) {
+    final trimmed = value.trim();
+    final current = ref.read(catalogFilterProvider);
+    // Khi xóa hết ký tự trên thanh tìm kiếm, lập tức hoàn nguyên danh sách sản phẩm ban đầu
+    if (trimmed.isEmpty && current.searchKeyword != null) {
+      ref.read(catalogFilterProvider.notifier).state = current.copyWith(
+        searchKeyword: null,
+      );
+      ref.read(catalogSearchTimestampProvider.notifier).state = null;
+      ref.read(catalogPageProvider.notifier).state = 1;
+    }
   }
 
   void _onClearSearch() {
     _searchController.clear();
     final current = ref.read(catalogFilterProvider);
-    ref.read(catalogFilterProvider.notifier).state = current.copyWith(
-      searchKeyword: null,
-    );
-    ref.read(catalogPageProvider.notifier).state = 1;
+    if (current.searchKeyword != null) {
+      ref.read(catalogFilterProvider.notifier).state = current.copyWith(
+        searchKeyword: null,
+      );
+      ref.read(catalogSearchTimestampProvider.notifier).state = null;
+      ref.read(catalogPageProvider.notifier).state = 1;
+    }
   }
 
   void _onCategorySelected(String? categoryId) {
@@ -81,12 +134,24 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
 
   void _resetAllFilters() {
     _searchController.clear();
+    ref.read(catalogSearchTimestampProvider.notifier).state = null;
     ref.read(catalogFilterProvider.notifier).state = const CatalogFilter();
     ref.read(catalogPageProvider.notifier).state = 1;
   }
 
   @override
   Widget build(BuildContext context) {
+    // Đồng bộ ngược lại controller nếu searchKeyword bị thay đổi từ bên ngoài (reset filter, timeout, logout)
+    ref.listen<CatalogFilter>(catalogFilterProvider, (previous, next) {
+      final nextKeyword = next.searchKeyword ?? '';
+      if (_searchController.text != nextKeyword) {
+        _searchController.text = nextKeyword;
+        _searchController.selection = TextSelection.fromPosition(
+          TextPosition(offset: nextKeyword.length),
+        );
+      }
+    });
+
     final filter = ref.watch(catalogFilterProvider);
     final currentPage = ref.watch(catalogPageProvider);
     final categoriesAsync = ref.watch(activeCategoriesProvider);
@@ -205,6 +270,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
             controller: _searchController,
             textInputAction: TextInputAction.search,
             onSubmitted: _onSearchSubmitted,
+            onChanged: _onSearchChanged,
             decoration: InputDecoration(
               hintText: 'Tìm kiếm trang phục...',
               prefixIcon: const Icon(Icons.search, size: 20),
