@@ -12,6 +12,7 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_loading.dart';
 import '../../../core/widgets/empty_state_view.dart';
 import '../../../core/widgets/error_state_view.dart';
+import '../../catalog/data/storage_repository.dart';
 import '../data/cart_providers.dart';
 import '../domain/models/cart_item_model.dart';
 
@@ -175,7 +176,7 @@ class CartScreen extends ConsumerWidget {
     int selectedCount,
     bool hasOutOfStockInCart,
   ) {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(AppDimensions.space16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,7 +277,7 @@ class CartScreen extends ConsumerWidget {
                   },
           ),
           const SizedBox(width: AppDimensions.space8),
-          Flexible(
+          Expanded(
             child: InkWell(
               onTap: inStockCount == 0
                   ? null
@@ -306,15 +307,21 @@ class CartScreen extends ConsumerWidget {
           ),
           const SizedBox(width: AppDimensions.space8),
           if (selectedCount > 0) ...[
-            TextButton(
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.textMuted,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimensions.space8),
-              ),
-              onPressed: () =>
+            InkWell(
+              onTap: () =>
                   ref.read(selectedCartItemIdsProvider.notifier).deselectAll(),
-              child: const Text('Bỏ chọn tất cả'),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppDimensions.space6,
+                  vertical: AppDimensions.space4,
+                ),
+                child: Text(
+                  'Bỏ chọn tất cả',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ),
             ),
             const SizedBox(width: AppDimensions.space8),
           ],
@@ -499,6 +506,10 @@ class _CartItemTile extends ConsumerWidget {
     final isSelected = ref.watch(
       selectedCartItemIdsProvider.select((ids) => ids.contains(item.id)),
     );
+    final storageRepo = ref.watch(storageRepositoryProvider);
+    final resolvedImageUrl = (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+        ? storageRepo.getProductImageUrl(item.imageUrl)
+        : '';
 
     return Container(
       padding: const EdgeInsets.all(AppDimensions.space12),
@@ -518,7 +529,7 @@ class _CartItemTile extends ConsumerWidget {
           // Checkbox chọn sản phẩm thanh toán
           Padding(
             padding: const EdgeInsets.only(
-              top: AppDimensions.space24,
+              top: AppDimensions.space16,
               right: AppDimensions.space8,
             ),
             child: Checkbox(
@@ -538,16 +549,34 @@ class _CartItemTile extends ConsumerWidget {
             borderRadius: BorderRadius.circular(AppDimensions.radius8),
             child: Container(
               width: 80,
-              height: 100,
-              color: AppColors.surfaceVariant,
-              child: item.imageUrl != null
+              height: 80,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(AppDimensions.radius8),
+                border: Border.all(
+                  color: AppColors.border.withValues(alpha: 0.6),
+                  width: 0.8,
+                ),
+              ),
+              child: resolvedImageUrl.isNotEmpty
                   ? Image.network(
-                      item.imageUrl!,
+                      resolvedImageUrl,
                       fit: BoxFit.cover,
+                      alignment: Alignment.center,
                       errorBuilder: (_, _, _) => const Icon(
                         Icons.image_not_supported_outlined,
                         color: AppColors.textMuted,
                       ),
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return const Center(
+                          child: SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        );
+                      },
                     )
                   : const Icon(
                       Icons.checkroom_outlined,

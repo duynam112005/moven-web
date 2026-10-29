@@ -288,6 +288,44 @@ void main() {
       expect(find.text('Chưa có sản phẩm nào được chọn'), findsOneWidget);
       expect(find.text('Quay lại giỏ hàng'), findsOneWidget);
     });
+
+    testWidgets(
+        'Thumbnail sản phẩm trong Checkout sử dụng khung vuông và fill vừa vặn',
+        (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final itemWithImg = sampleItem.copyWith(
+        imageUrl: 'https://example.com/checkout_item.jpg',
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          overrides: [
+            isAuthenticatedProvider.overrideWithValue(true),
+            currentUserProvider.overrideWithValue(mockUser),
+            cartNotifierProvider.overrideWith(
+              (ref) => _MockCartNotifier(AsyncValue.data([itemWithImg])),
+            ),
+            addressRepositoryProvider.overrideWithValue(
+              _MockAddressRepository([sampleAddress]),
+            ),
+            defaultShippingFeeProvider.overrideWith((ref) => Future.value(20000)),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final imgFinder = find.byType(Image);
+      expect(imgFinder, findsOneWidget);
+      final imgWidget = tester.widget<Image>(imgFinder);
+      expect(imgWidget.fit, BoxFit.cover);
+    });
   });
 }
 

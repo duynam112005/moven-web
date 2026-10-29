@@ -283,6 +283,55 @@ void main() {
       expect(checkboxes[1].onChanged, isNotNull);
       expect(checkboxes[2].onChanged, isNull);
     });
+
+    testWidgets(
+        'Hình ảnh sản phẩm trong giỏ sử dụng khung vuông chuẩn Shopee và fill vừa vặn khung',
+        (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final items = [
+        CartItemModel(
+          id: 'item-img',
+          cartId: 'cart-img',
+          variantId: 'var-img',
+          quantity: 1,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          productName: 'Áo Thun Image Scale',
+          productSlug: 'ao-thun-image-scale',
+          sku: 'MVN-IMG',
+          price: 200000,
+          stockQuantity: 10,
+          imageUrl: 'https://example.com/product.jpg',
+          isActive: true,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        createTestWidget(
+          overrides: [
+            isAuthenticatedProvider.overrideWithValue(true),
+            currentUserProvider.overrideWithValue(mockUser),
+            cartNotifierProvider.overrideWith(
+              (ref) => _MockCartNotifier(AsyncValue.data(items)),
+            ),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final imageFinder = find.byType(Image);
+      expect(imageFinder, findsOneWidget);
+      final imageWidget = tester.widget<Image>(imageFinder);
+      expect(imageWidget.fit, BoxFit.cover);
+      expect(imageWidget.alignment, Alignment.center);
+    });
   });
 }
 

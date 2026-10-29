@@ -62,15 +62,24 @@ class CartItemModel {
     final rawProduct = variant['products'] ?? variant['product'];
     final product = rawProduct is Map ? Map<String, dynamic>.from(rawProduct) : <String, dynamic>{};
 
-    // Lấy ảnh ưu tiên: ảnh riêng biến thể hoặc ảnh đầu tiên của sản phẩm
+    // Lấy ảnh ưu tiên: ảnh riêng biến thể -> ảnh chính sản phẩm (is_primary) -> ảnh đầu tiên
     String? img;
     final images = product['product_images'] as List<dynamic>?;
     if (images != null && images.isNotEmpty) {
-      final imgList = images.whereType<Map>().map((i) => Map<String, dynamic>.from(i)).toList();
+      final imgList = images
+          .whereType<Map>()
+          .map((i) => Map<String, dynamic>.from(i))
+          .toList();
       if (imgList.isNotEmpty) {
         final variantImg = imgList.firstWhere(
-          (i) => i['variant_id'] == variant['id'],
-          orElse: () => imgList.first,
+          (i) =>
+              i['variant_id'] != null &&
+              variant['id'] != null &&
+              i['variant_id'] == variant['id'],
+          orElse: () => imgList.firstWhere(
+            (i) => i['is_primary'] == true,
+            orElse: () => imgList.first,
+          ),
         );
         img = variantImg['image_path'] as String?;
       }
