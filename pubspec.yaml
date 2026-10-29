@@ -56,6 +56,9 @@ dependencies:
   # File Picker for Web/Mobile
   file_picker: ^8.1.7
 
+  # QR Code Generator
+  qr_flutter: ^4.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

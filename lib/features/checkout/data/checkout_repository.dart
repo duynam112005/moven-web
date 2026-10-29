@@ -27,58 +27,92 @@ class CheckoutRepository {
     }
   }
 
-  /// Thực thi đặt hàng COD nguyên tử thông qua PostgreSQL RPC `create_order_checkout`
+  /// Thực thi đặt hàng (COD hoặc Quét mã QR) thông qua PostgreSQL RPC `create_order_checkout`
   Future<CheckoutResult> createOrderCheckout({
     required Map<String, dynamic> shippingAddress,
     required List<Map<String, dynamic>> items,
     String? customerNote,
+    String paymentMethod = 'cod',
   }) async {
+    final note = (customerNote != null && customerNote.trim().isNotEmpty)
+        ? customerNote.trim()
+        : null;
+
+    dynamic response;
     try {
-      final response = await _client.rpc(
+      response = await _client.rpc(
         'create_order_checkout',
         params: {
           'p_shipping_address': shippingAddress,
           'p_items': items,
-          'p_customer_note': (customerNote != null && customerNote.trim().isNotEmpty)
-              ? customerNote.trim()
-              : null,
+          'p_customer_note': note,
+          'p_payment_method': paymentMethod,
         },
       );
-
-      final Map<String, dynamic> resultMap;
-      if (response is Map) {
-        resultMap = Map<String, dynamic>.from(response);
-      } else if (response is String) {
-        resultMap = Map<String, dynamic>.from(jsonDecode(response) as Map);
-      } else {
-        throw const ServerException('Phản hồi từ máy chủ không hợp lệ.');
-      }
-      return CheckoutResult.fromJson(resultMap);
     } on PostgrestException catch (e) {
-      // Phân tách mã lỗi nghiệp vụ từ RPC
-      if (e.code == 'P0005') {
-        throw OutOfStockException(
-          e.message,
-          code: 'INSUFFICIENT_STOCK',
-        );
-      } else if (e.code == 'P0004') {
-        throw NotFoundException(
-          e.message,
-          code: 'PRODUCT_INACTIVE',
-        );
-      } else if (e.code == 'P0002') {
-        throw ValidationException(e.message);
-      } else if (e.code == 'P0001') {
-        throw const AppAuthException('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
-      }
+      final isSchemaCacheError = e.code == 'PGRST202' ||
+          e.message.contains('schema cache') ||
+          e.message.contains('Could not find the function');
 
-      throw ServerException(
-        'Lỗi xử lý đơn hàng: ${e.message}',
-        code: e.code,
-      );
+      if (isSchemaCacheError && paymentMethod == 'cod') {
+        // Tương thích ngược: Nếu database Supabase chưa nạp migration mới nhận 4 tham số,
+        // tự động fallback gọi hàm 3 tham số để đơn hàng COD không bao giờ bị gián đoạn.
+        try {
+          response = await _client.rpc(
+            'create_order_checkout',
+            params: {
+              'p_shipping_address': shippingAddress,
+              'p_items': items,
+              'p_customer_note': note,
+            },
+          );
+        } catch (_) {
+          _mapPostgrestException(e);
+        }
+      } else if (isSchemaCacheError && paymentMethod == 'qr_code') {
+        throw const ServerException(
+          'Hệ thống chưa chạy migration hỗ trợ Quét mã QR trên database Supabase. Vui lòng chạy file migration 20261029000002_qr_payment_and_expiration.sql trên Supabase SQL Editor hoặc chuyển sang thanh toán COD.',
+          code: 'MIGRATION_REQUIRED',
+        );
+      } else {
+        _mapPostgrestException(e);
+      }
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException('Không thể hoàn tất đặt hàng: $e');
     }
+
+    final Map<String, dynamic> resultMap;
+    if (response is Map) {
+      resultMap = Map<String, dynamic>.from(response);
+    } else if (response is String) {
+      resultMap = Map<String, dynamic>.from(jsonDecode(response) as Map);
+    } else {
+      throw const ServerException('Phản hồi từ máy chủ không hợp lệ.');
+    }
+    return CheckoutResult.fromJson(resultMap);
+  }
+
+  Never _mapPostgrestException(PostgrestException e) {
+    if (e.code == 'P0005') {
+      throw OutOfStockException(
+        e.message,
+        code: 'INSUFFICIENT_STOCK',
+      );
+    } else if (e.code == 'P0004') {
+      throw NotFoundException(
+        e.message,
+        code: 'PRODUCT_INACTIVE',
+      );
+    } else if (e.code == 'P0002') {
+      throw ValidationException(e.message);
+    } else if (e.code == 'P0001') {
+      throw const AppAuthException('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+
+    throw ServerException(
+      'Lỗi xử lý đơn hàng: ${e.message}',
+      code: e.code,
+    );
   }
 }

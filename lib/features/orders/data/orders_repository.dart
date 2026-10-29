@@ -562,7 +562,7 @@ class OrdersRepository {
     }
   }
 
-  /// Quản trị viên đối soát cập nhật trạng thái thanh toán COD (ADR-0002)
+  /// Quản trị viên đối soát cập nhật trạng thái thanh toán COD hoặc Quét mã QR (ADR-0002 & ADR-0007)
   Future<void> adminUpdatePaymentStatus({
     required String orderId,
     required String paymentStatus,
@@ -572,8 +572,10 @@ class OrdersRepository {
     if (client == null) {
       final idx = _mockOrders.indexWhere((o) => o.id == orderId);
       if (idx != -1) {
-        _mockOrders[idx] = _mockOrders[idx].copyWith(
+        final current = _mockOrders[idx];
+        _mockOrders[idx] = current.copyWith(
           paymentStatus: paymentStatus,
+          status: current.status,
           updatedAt: DateTime.now(),
         );
       }
@@ -593,7 +595,22 @@ class OrdersRepository {
       throw ServerException('Cập nhật thanh toán thất bại: ${e.message}');
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException('Không thể cập nhật trạng thái thanh toán: $e');
+      throw ServerException('Không thể cập nhật thanh toán: $e');
+    }
+  }
+
+  /// Tự động hủy các đơn hàng quét mã QR quá hạn 15 phút và hoàn kho nguyên tử
+  Future<int> cancelExpiredQrOrders() async {
+    final client = _client;
+    if (client == null) return 0;
+    try {
+      final res = await client.rpc('cancel_expired_qr_orders');
+      if (res is Map && res['cancelled_count'] != null) {
+        return (res['cancelled_count'] as num).toInt();
+      }
+      return 0;
+    } catch (_) {
+      return 0;
     }
   }
 

@@ -46,6 +46,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   List<Address> _userAddresses = [];
   bool _isLoadingAddresses = true;
   String? _checkoutErrorMessage;
+  String _selectedPaymentMethod = 'cod';
 
   @override
   void initState() {
@@ -179,6 +180,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             shippingAddress: shippingAddressMap,
             items: checkoutItems,
             customerNote: _noteController.text.trim(),
+            paymentMethod: _selectedPaymentMethod,
           );
 
       if (result != null && mounted) {
@@ -336,17 +338,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     int totalAmount,
     bool isSubmitting,
   ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppDimensions.space32,
-        vertical: AppDimensions.space32,
-      ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1200),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimensions.space32,
+          vertical: AppDimensions.space32,
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1200),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               Row(
                 children: [
                   IconButton(
@@ -394,6 +397,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 
@@ -724,40 +728,140 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             ],
           ),
           const SizedBox(height: AppDimensions.space16),
-          Container(
-            padding: const EdgeInsets.all(AppDimensions.space16),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceVariant,
-              borderRadius: BorderRadius.circular(AppDimensions.radius8),
-              border: Border.all(color: AppColors.primary),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.check_circle, color: AppColors.primary),
-                SizedBox(width: AppDimensions.space12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Thanh toán khi nhận hàng (COD)',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Bạn chỉ cần thanh toán tiền mặt cho nhân viên giao hàng khi đã nhận và kiểm tra hàng.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textMuted,
-                        ),
-                      ),
-                    ],
-                  ),
+
+          // Lựa chọn 1: COD
+          InkWell(
+            onTap: () => setState(() => _selectedPaymentMethod = 'cod'),
+            borderRadius: BorderRadius.circular(AppDimensions.radius8),
+            child: Container(
+              padding: const EdgeInsets.all(AppDimensions.space16),
+              decoration: BoxDecoration(
+                color: _selectedPaymentMethod == 'cod'
+                    ? AppColors.surfaceVariant
+                    : AppColors.surface,
+                borderRadius: BorderRadius.circular(AppDimensions.radius8),
+                border: Border.all(
+                  color: _selectedPaymentMethod == 'cod'
+                      ? AppColors.primary
+                      : AppColors.border,
+                  width: _selectedPaymentMethod == 'cod' ? 1.5 : 1,
                 ),
-              ],
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _selectedPaymentMethod == 'cod'
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked,
+                    color: _selectedPaymentMethod == 'cod'
+                        ? AppColors.primary
+                        : AppColors.textMuted,
+                  ),
+                  const SizedBox(width: AppDimensions.space12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Thanh toán khi nhận hàng (COD)',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Bạn chỉ cần thanh toán tiền mặt cho nhân viên giao hàng khi đã nhận và kiểm tra hàng.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: AppDimensions.space12),
+
+          // Lựa chọn 2: Quét mã QR
+          InkWell(
+            onTap: () => setState(() => _selectedPaymentMethod = 'qr_code'),
+            borderRadius: BorderRadius.circular(AppDimensions.radius8),
+            child: Container(
+              padding: const EdgeInsets.all(AppDimensions.space16),
+              decoration: BoxDecoration(
+                color: _selectedPaymentMethod == 'qr_code'
+                    ? AppColors.surfaceVariant
+                    : AppColors.surface,
+                borderRadius: BorderRadius.circular(AppDimensions.radius8),
+                border: Border.all(
+                  color: _selectedPaymentMethod == 'qr_code'
+                      ? AppColors.primary
+                      : AppColors.border,
+                  width: _selectedPaymentMethod == 'qr_code' ? 1.5 : 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _selectedPaymentMethod == 'qr_code'
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked,
+                    color: _selectedPaymentMethod == 'qr_code'
+                        ? AppColors.primary
+                        : AppColors.textMuted,
+                  ),
+                  const SizedBox(width: AppDimensions.space12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Text(
+                              'Quét mã QR thanh toán',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFE8F5E9),
+                                borderRadius: BorderRadius.all(Radius.circular(4)),
+                              ),
+                              child: const Text(
+                                'Hạn 15 phút',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF2E7D32),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Mở camera điện thoại quét mã QR để xem chi tiết đơn hàng và số tiền thanh toán.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.qr_code, color: AppColors.textSecondary),
+                ],
+              ),
             ),
           ),
         ],
@@ -883,8 +987,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Flexible(
-                child: Text('Phí giao hàng COD:', style: AppTypography.bodyMedium),
+              Flexible(
+                child: Text(
+                  _selectedPaymentMethod == 'qr_code'
+                      ? 'Phí giao hàng:'
+                      : 'Phí giao hàng COD:',
+                  style: AppTypography.bodyMedium,
+                ),
               ),
               const SizedBox(width: AppDimensions.space8),
               Flexible(
@@ -948,7 +1057,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           ],
 
           AppButton(
-            label: isSubmitting ? 'Đang xử lý...' : 'Xác nhận đặt hàng COD',
+            label: isSubmitting
+                ? 'Đang xử lý...'
+                : (_selectedPaymentMethod == 'qr_code'
+                    ? 'Đặt hàng & Nhận mã QR'
+                    : 'Xác nhận đặt hàng COD'),
             icon: isSubmitting
                 ? const SizedBox(
                     width: 18,
@@ -958,7 +1071,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       color: AppColors.onPrimary,
                     ),
                   )
-                : const Icon(Icons.check_circle_outline, size: 18),
+                : Icon(
+                    _selectedPaymentMethod == 'qr_code'
+                        ? Icons.qr_code_2
+                        : Icons.check_circle_outline,
+                    size: 18,
+                  ),
             isFullWidth: true,
             height: AppDimensions.buttonHeightLg,
             onPressed: isSubmitting ? null : () => _handleCheckout(items),

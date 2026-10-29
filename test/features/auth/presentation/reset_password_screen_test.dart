@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:moven/core/network/supabase_client.dart';
 import 'package:moven/core/router/router_notifier.dart';
 import 'package:moven/features/auth/data/auth_repository.dart';
-import 'package:moven/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:moven/features/auth/presentation/reset_password_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 

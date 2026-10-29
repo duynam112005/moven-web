@@ -168,7 +168,7 @@ class DashboardRepository {
 
     // 1. Doanh thu đơn giao thành công (delivered) trong khoảng thời gian lọc (ADR-0005)
     final deliveredOrders = orders.where((o) => o.status == OrderStatus.delivered).where((o) {
-      final date = o.deliveredAt ?? o.updatedAt ?? o.createdAt;
+      final date = o.deliveredAt ?? o.updatedAt;
       if (startDate != null && date.isBefore(startDate)) return false;
       if (endDate != null && date.isAfter(endDate)) return false;
       return true;

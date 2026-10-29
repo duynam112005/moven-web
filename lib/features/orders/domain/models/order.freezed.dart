@@ -58,6 +58,8 @@ mixin _$Order {
   DateTime? get cancelledAt => throw _privateConstructorUsedError;
   @JsonKey(name: 'delivered_at')
   DateTime? get deliveredAt => throw _privateConstructorUsedError;
+  @JsonKey(name: 'payment_expired_at')
+  DateTime? get paymentExpiredAt => throw _privateConstructorUsedError;
   @JsonKey(name: 'order_items')
   List<OrderItem> get items => throw _privateConstructorUsedError;
   @JsonKey(name: 'order_status_history')
@@ -99,6 +101,7 @@ abstract class $OrderCopyWith<$Res> {
     @JsonKey(name: 'updated_at') DateTime updatedAt,
     @JsonKey(name: 'cancelled_at') DateTime? cancelledAt,
     @JsonKey(name: 'delivered_at') DateTime? deliveredAt,
+    @JsonKey(name: 'payment_expired_at') DateTime? paymentExpiredAt,
     @JsonKey(name: 'order_items') List<OrderItem> items,
     @JsonKey(name: 'order_status_history')
     List<OrderStatusHistory> statusHistory,
@@ -139,6 +142,7 @@ class _$OrderCopyWithImpl<$Res, $Val extends Order>
     Object? updatedAt = null,
     Object? cancelledAt = freezed,
     Object? deliveredAt = freezed,
+    Object? paymentExpiredAt = freezed,
     Object? items = null,
     Object? statusHistory = null,
   }) {
@@ -220,6 +224,10 @@ class _$OrderCopyWithImpl<$Res, $Val extends Order>
                 ? _value.deliveredAt
                 : deliveredAt // ignore: cast_nullable_to_non_nullable
                       as DateTime?,
+            paymentExpiredAt: freezed == paymentExpiredAt
+                ? _value.paymentExpiredAt
+                : paymentExpiredAt // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
             items: null == items
                 ? _value.items
                 : items // ignore: cast_nullable_to_non_nullable
@@ -263,6 +271,7 @@ abstract class _$$OrderImplCopyWith<$Res> implements $OrderCopyWith<$Res> {
     @JsonKey(name: 'updated_at') DateTime updatedAt,
     @JsonKey(name: 'cancelled_at') DateTime? cancelledAt,
     @JsonKey(name: 'delivered_at') DateTime? deliveredAt,
+    @JsonKey(name: 'payment_expired_at') DateTime? paymentExpiredAt,
     @JsonKey(name: 'order_items') List<OrderItem> items,
     @JsonKey(name: 'order_status_history')
     List<OrderStatusHistory> statusHistory,
@@ -302,6 +311,7 @@ class __$$OrderImplCopyWithImpl<$Res>
     Object? updatedAt = null,
     Object? cancelledAt = freezed,
     Object? deliveredAt = freezed,
+    Object? paymentExpiredAt = freezed,
     Object? items = null,
     Object? statusHistory = null,
   }) {
@@ -383,6 +393,10 @@ class __$$OrderImplCopyWithImpl<$Res>
             ? _value.deliveredAt
             : deliveredAt // ignore: cast_nullable_to_non_nullable
                   as DateTime?,
+        paymentExpiredAt: freezed == paymentExpiredAt
+            ? _value.paymentExpiredAt
+            : paymentExpiredAt // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
         items: null == items
             ? _value._items
             : items // ignore: cast_nullable_to_non_nullable
@@ -421,6 +435,7 @@ class _$OrderImpl extends _Order {
     @JsonKey(name: 'updated_at') required this.updatedAt,
     @JsonKey(name: 'cancelled_at') this.cancelledAt,
     @JsonKey(name: 'delivered_at') this.deliveredAt,
+    @JsonKey(name: 'payment_expired_at') this.paymentExpiredAt,
     @JsonKey(name: 'order_items') final List<OrderItem> items = const [],
     @JsonKey(name: 'order_status_history')
     final List<OrderStatusHistory> statusHistory = const [],
@@ -493,6 +508,9 @@ class _$OrderImpl extends _Order {
   @override
   @JsonKey(name: 'delivered_at')
   final DateTime? deliveredAt;
+  @override
+  @JsonKey(name: 'payment_expired_at')
+  final DateTime? paymentExpiredAt;
   final List<OrderItem> _items;
   @override
   @JsonKey(name: 'order_items')
@@ -513,7 +531,7 @@ class _$OrderImpl extends _Order {
 
   @override
   String toString() {
-    return 'Order(id: $id, orderCode: $orderCode, userId: $userId, status: $status, paymentMethod: $paymentMethod, paymentStatus: $paymentStatus, recipientName: $recipientName, recipientPhone: $recipientPhone, shippingAddress: $shippingAddress, subtotal: $subtotal, shippingFee: $shippingFee, discountAmount: $discountAmount, totalAmount: $totalAmount, customerNote: $customerNote, cancellationReason: $cancellationReason, createdAt: $createdAt, updatedAt: $updatedAt, cancelledAt: $cancelledAt, deliveredAt: $deliveredAt, items: $items, statusHistory: $statusHistory)';
+    return 'Order(id: $id, orderCode: $orderCode, userId: $userId, status: $status, paymentMethod: $paymentMethod, paymentStatus: $paymentStatus, recipientName: $recipientName, recipientPhone: $recipientPhone, shippingAddress: $shippingAddress, subtotal: $subtotal, shippingFee: $shippingFee, discountAmount: $discountAmount, totalAmount: $totalAmount, customerNote: $customerNote, cancellationReason: $cancellationReason, createdAt: $createdAt, updatedAt: $updatedAt, cancelledAt: $cancelledAt, deliveredAt: $deliveredAt, paymentExpiredAt: $paymentExpiredAt, items: $items, statusHistory: $statusHistory)';
   }
 
   @override
@@ -558,6 +576,8 @@ class _$OrderImpl extends _Order {
                 other.cancelledAt == cancelledAt) &&
             (identical(other.deliveredAt, deliveredAt) ||
                 other.deliveredAt == deliveredAt) &&
+            (identical(other.paymentExpiredAt, paymentExpiredAt) ||
+                other.paymentExpiredAt == paymentExpiredAt) &&
             const DeepCollectionEquality().equals(other._items, _items) &&
             const DeepCollectionEquality().equals(
               other._statusHistory,
@@ -588,6 +608,7 @@ class _$OrderImpl extends _Order {
     updatedAt,
     cancelledAt,
     deliveredAt,
+    paymentExpiredAt,
     const DeepCollectionEquality().hash(_items),
     const DeepCollectionEquality().hash(_statusHistory),
   ]);
@@ -629,6 +650,7 @@ abstract class _Order extends Order {
     @JsonKey(name: 'updated_at') required final DateTime updatedAt,
     @JsonKey(name: 'cancelled_at') final DateTime? cancelledAt,
     @JsonKey(name: 'delivered_at') final DateTime? deliveredAt,
+    @JsonKey(name: 'payment_expired_at') final DateTime? paymentExpiredAt,
     @JsonKey(name: 'order_items') final List<OrderItem> items,
     @JsonKey(name: 'order_status_history')
     final List<OrderStatusHistory> statusHistory,
@@ -692,6 +714,9 @@ abstract class _Order extends Order {
   @override
   @JsonKey(name: 'delivered_at')
   DateTime? get deliveredAt;
+  @override
+  @JsonKey(name: 'payment_expired_at')
+  DateTime? get paymentExpiredAt;
   @override
   @JsonKey(name: 'order_items')
   List<OrderItem> get items;

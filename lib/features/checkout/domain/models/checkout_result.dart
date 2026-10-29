@@ -9,6 +9,8 @@ class CheckoutResult {
   final int subtotal;
   final int shippingFee;
   final int totalAmount;
+  final String paymentMethod;
+  final DateTime? paymentExpiredAt;
 
   const CheckoutResult({
     required this.success,
@@ -17,6 +19,8 @@ class CheckoutResult {
     required this.subtotal,
     required this.shippingFee,
     required this.totalAmount,
+    this.paymentMethod = 'cod',
+    this.paymentExpiredAt,
   });
 
   factory CheckoutResult.fromJson(Map<String, dynamic> json) {
@@ -27,6 +31,10 @@ class CheckoutResult {
       subtotal: (json['subtotal'] as num?)?.toInt() ?? 0,
       shippingFee: (json['shipping_fee'] as num?)?.toInt() ?? 20000,
       totalAmount: (json['total_amount'] as num?)?.toInt() ?? 0,
+      paymentMethod: json['payment_method']?.toString() ?? 'cod',
+      paymentExpiredAt: json['payment_expired_at'] != null
+          ? DateTime.tryParse(json['payment_expired_at'].toString())
+          : null,
     );
   }
 }

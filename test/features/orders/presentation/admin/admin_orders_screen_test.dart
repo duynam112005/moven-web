@@ -45,9 +45,7 @@ void main() {
     expect(find.text('Nguyễn Văn An'), findsWidgets);
   });
 
-  testWidgets('Updating order status to delivered automatically invalidates and updates dashboard metrics', (
-    WidgetTester tester,
-  ) async {
+  test('Updating order status to delivered automatically invalidates and updates dashboard metrics', () async {
     final container = ProviderContainer();
     addTearDown(container.dispose);
 

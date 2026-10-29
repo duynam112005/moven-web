@@ -34,6 +34,7 @@ class Order with _$Order {
     @JsonKey(name: 'updated_at') required DateTime updatedAt,
     @JsonKey(name: 'cancelled_at') DateTime? cancelledAt,
     @JsonKey(name: 'delivered_at') DateTime? deliveredAt,
+    @JsonKey(name: 'payment_expired_at') DateTime? paymentExpiredAt,
     @JsonKey(name: 'order_items') @Default([]) List<OrderItem> items,
     @JsonKey(name: 'order_status_history')
     @Default([])
@@ -69,9 +70,9 @@ class Order with _$Order {
   String get paymentStatusDisplayName {
     switch (paymentStatus.toLowerCase()) {
       case 'paid':
-        return 'Đã thanh toán COD';
+        return isQrPayment ? 'Đã thanh toán (QR)' : 'Đã thu tiền COD';
       case 'unpaid':
-        return 'Chưa thu tiền';
+        return isQrPayment ? 'Chờ quét mã QR' : 'Chưa thu tiền';
       case 'failed':
         return 'Thất bại';
       default:
@@ -79,6 +80,23 @@ class Order with _$Order {
     }
   }
 
-  /// Đã thu tiền mặt COD hay chưa
+  /// Phương thức thanh toán hiển thị thân thiện
+  String get paymentMethodDisplayName {
+    return isQrPayment ? 'Quét mã QR' : 'COD (Tiền mặt)';
+  }
+
+  /// Đơn hàng dùng phương thức thanh toán mã QR
+  bool get isQrPayment => paymentMethod == 'qr_code';
+
+  /// Đơn hàng dùng phương thức COD
+  bool get isCodPayment => paymentMethod == 'cod';
+
+  /// Đơn QR đã quá hạn 15 phút chưa
+  bool get isPaymentExpired {
+    if (paymentExpiredAt == null) return false;
+    return DateTime.now().toUtc().isAfter(paymentExpiredAt!.toUtc());
+  }
+
+  /// Đã thu tiền / thanh toán hay chưa
   bool get isPaid => paymentStatus.toLowerCase() == 'paid';
 }

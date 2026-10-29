@@ -110,13 +110,14 @@ Ràng buộc unique `cart_id + variant_id`. Giỏ không đảm bảo giữ ch�
 - `order_code`: unique, dễ đọc, không đoán được tuần tự đơn giản nếu có thể (tiền tố `MVN-`).
 - `user_id`: FK `profiles.id`.
 - `status`: `pending_confirmation`, `confirmed`, `preparing`, `shipping`, `delivery_failed`, `delivered`, `cancelled`, `returned`.
-- `payment_method`: chỉ `cod` trong MVP.
-- `payment_status`: `unpaid`, `paid`, `failed`. Khi tạo đơn bắt đầu ở `unpaid`. Trong MVP (theo Phương án B), khi đơn chuyển sang `delivered`, hệ thống tự động cập nhật `payment_status = 'paid'`.
+- `payment_method`: `cod` (thanh toán khi nhận hàng) hoặc `qr_code` (quét mã QR thanh toán) (ADR-0007).
+- `payment_status`: `unpaid`, `paid`, `failed`. Khi tạo đơn bắt đầu ở `unpaid`. Trong MVP (theo Phương án B), khi đơn chuyển sang `delivered`, hệ thống tự động cập nhật `payment_status = 'paid'`. Với đơn `qr_code`, khi `payment_status = 'paid'`, đơn tự động chuyển sang `confirmed`.
+- `payment_expired_at`: timestamptz, nullable (thời hạn 15 phút cho đơn `qr_code`; quá hạn tự hủy và hoàn kho).
 - `recipient_name`, `recipient_phone`, `shipping_address`: snapshot bắt buộc.
 - `subtotal`: tổng giá dòng hàng trước phí ship.
 - `shipping_fee`: phí ship snapshot.
 - `discount_amount`: để dành cho tương lai; MVP luôn 0 và không nhận từ client.
-- `total_amount`: tổng phải thu COD; được server tính.
+- `total_amount`: tổng thanh toán đơn hàng; được server tính.
 - `customer_note`: nullable.
 - `created_at`, `updated_at`, `cancelled_at`, `delivered_at`.
 Quy tắc: khách chỉ được hủy khi đơn ở `pending_confirmation`. Admin có thể hủy ở `confirmed` hoặc `preparing` (nếu hàng chưa bàn giao). `delivery_failed` không tự hoàn kho. Khi admin xác nhận đã nhận đủ hàng hoàn về kho, đơn chuyển sang `returned` và hoàn kho toàn bộ đơn (nguyên tử). Dashboard doanh thu tính trên đơn `delivered`.
