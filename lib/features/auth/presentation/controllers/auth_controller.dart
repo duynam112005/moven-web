@@ -112,11 +112,18 @@ class AuthController extends StateNotifier<AuthFormState> {
 
   /// Gửi email khôi phục mật khẩu.
   ///
+  /// Nhận `redirectTo` tuỳ chọn để định hướng lại người dùng sau khi xác nhận trong email.
   /// Trả về `true` nếu email được gửi thành công.
-  Future<bool> sendPasswordResetEmail(String email) async {
+  Future<bool> sendPasswordResetEmail(
+    String email, {
+    String? redirectTo,
+  }) async {
     state = const AuthFormState(isLoading: true);
     try {
-      await _authRepository.resetPasswordForEmail(email);
+      await _authRepository.resetPasswordForEmail(
+        email,
+        redirectTo: redirectTo,
+      );
       state = const AuthFormState(
         successMessage:
             'Email khôi phục đã được gửi. Vui lòng kiểm tra hộp thư của bạn.',
@@ -135,11 +142,17 @@ class AuthController extends StateNotifier<AuthFormState> {
 
   /// Đặt lại mật khẩu mới (sau khi nhấn link trong email).
   ///
+  /// Sau khi cập nhật thành công, tự động đăng xuất phiên tạm để dọn sạch recovery session.
   /// Trả về `true` nếu cập nhật mật khẩu thành công.
   Future<bool> updatePassword(String newPassword) async {
     state = const AuthFormState(isLoading: true);
     try {
       await _authRepository.updatePassword(newPassword);
+      try {
+        await _authRepository.signOut();
+      } catch (_) {
+        // Đảm bảo không để lỗi signOut làm gián đoạn trạng thái thành công
+      }
       state = const AuthFormState(
         successMessage: 'Mật khẩu đã được cập nhật thành công.',
       );

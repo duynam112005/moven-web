@@ -6,8 +6,11 @@ import 'package:moven/features/auth/presentation/controllers/auth_controller.dar
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_typography.dart';
+import '../../../../core/network/supabase_client.dart';
 import '../../../../core/router/route_names.dart';
+import '../../../../core/router/router_notifier.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_loading.dart';
 
 /// Màn hình đặt lại mật khẩu — dùng sau khi nhấn liên kết trong email
 class ResetPasswordScreen extends ConsumerStatefulWidget {
@@ -41,6 +44,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
         .updatePassword(_passwordController.text);
 
     if (mounted && success) {
+      ref.read(isPasswordRecoveryProvider.notifier).state = false;
       setState(() => _resetSuccess = true);
     }
   }
@@ -48,6 +52,23 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
+    final currentUser = ref.watch(currentUserProvider);
+    final isRecovery = ref.watch(isPasswordRecoveryProvider);
+    final authStateAsync = ref.watch(authStateChangesProvider);
+
+    Widget content;
+    if (_resetSuccess) {
+      content = _buildSuccessView();
+    } else if (authStateAsync.isLoading) {
+      content = const Padding(
+        padding: EdgeInsets.symmetric(vertical: AppDimensions.space32),
+        child: AppLoading(message: 'Đang kiểm tra liên kết khôi phục...'),
+      );
+    } else if (currentUser == null && !isRecovery) {
+      content = _buildInvalidLinkView();
+    } else {
+      content = _buildForm(authState);
+    }
 
     return SingleChildScrollView(
       child: Center(
@@ -65,9 +86,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                 borderRadius: BorderRadius.circular(AppDimensions.radius12),
                 border: Border.all(color: AppColors.border),
               ),
-              child: _resetSuccess
-                  ? _buildSuccessView()
-                  : _buildForm(authState),
+              child: content,
             ),
           ),
         ),
@@ -75,6 +94,42 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     );
   }
 
+  Widget _buildInvalidLinkView() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(
+          Icons.link_off_outlined,
+          size: 56,
+          color: AppColors.error,
+        ),
+        const SizedBox(height: AppDimensions.space16),
+        const Text(
+          'Liên kết không hợp lệ hoặc đã hết hạn',
+          style: AppTypography.headlineLarge,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: AppDimensions.space8),
+        const Text(
+          'Liên kết đặt lại mật khẩu của bạn có thể đã hết hạn hoặc đã được sử dụng. '
+          'Vui lòng gửi lại yêu cầu để nhận liên kết mới.',
+          style: AppTypography.bodySmall,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: AppDimensions.space32),
+        AppButton(
+          label: 'Yêu cầu liên kết mới',
+          isFullWidth: true,
+          onPressed: () => context.goNamed(RouteNames.forgotPassword),
+        ),
+        const SizedBox(height: AppDimensions.space16),
+        TextButton(
+          onPressed: () => context.goNamed(RouteNames.login),
+          child: const Text('Quay lại đăng nhập'),
+        ),
+      ],
+    );
+  }
 
   Widget _buildSuccessView() {
     return Column(
@@ -137,8 +192,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
               ),
               child: Text(
                 authState.errorMessage!,
-                style:
-                    const TextStyle(fontSize: 13, color: AppColors.error),
+                style: const TextStyle(fontSize: 13, color: AppColors.error),
               ),
             ),
             const SizedBox(height: AppDimensions.space16),

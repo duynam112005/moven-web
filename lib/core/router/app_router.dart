@@ -47,7 +47,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final isAuthenticated = ref.read(isAuthenticatedProvider);
       final isAdmin = ref.read(isAdminProvider);
+      final isPasswordRecovery = ref.read(isPasswordRecoveryProvider);
       final location = state.matchedLocation;
+
+      // 0. Ưu tiên cao nhất: Khi phát hiện sự kiện khôi phục mật khẩu từ Supabase Auth,
+      // tự động chuyển hướng người dùng vào trang Đặt lại mật khẩu (/reset-password)
+      if (isPasswordRecovery) {
+        if (location != RouteNames.resetPasswordPath) {
+          return RouteNames.resetPasswordPath;
+        }
+        return null;
+      }
 
       final isAdminRoute = location.startsWith('/admin');
       final isCustomerProtectedRoute = location == RouteNames.checkoutPath ||
