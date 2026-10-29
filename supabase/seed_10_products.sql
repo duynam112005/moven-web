@@ -86,7 +86,8 @@ WHERE slug IN (
     'quan-jeans-nam-dang-suong-phong-cach-vintage',
     'quan-short-kaki-nam-co-gian-thoang-khi',
     'ao-khoac-nam-bomber-minimalist-khang-nuoc-nhe',
-    'ao-ba-lo-the-thao-quick-dry-active-tanktop'
+    'ao-ba-lo-the-thao-quick-dry-active-tanktop',
+    'ao-thun-nam-tron-co-tron-minimalist-white'
 )
 AND id NOT IN (
     '20000000-0000-0000-0000-000000000001',
@@ -290,15 +291,15 @@ VALUES (
     is_featured = EXCLUDED.is_featured,
     is_active = EXCLUDED.is_active;
 
--- SẢN PHẨM 10: Áo ba lỗ tanktop thể thao nam
+-- SẢN PHẨM 10: Áo thun nam trơn cổ tròn Minimalist
 INSERT INTO public.products (id, category_id, name, slug, description, material, target_audience, is_featured, is_active)
 VALUES (
     '20000000-0000-0000-0000-000000000010',
     '10000000-0000-0000-0000-000000000001',
-    'Áo Ba Lỗ Thể Thao Quick-Dry Active Tanktop',
-    'ao-ba-lo-the-thao-quick-dry-active-tanktop',
-    'Áo ba lỗ thể thao nam dệt vi sợi ma trận thoát nhiệt siêu tốc. Đường viền nách khoét chuẩn thể thao giúp chuyển động linh hoạt.',
-    '88% Polyester, 12% Spandex Quick-Dry',
+    'Áo Thun Nam Trơn Cổ Tròn Minimalist White',
+    'ao-thun-nam-tron-co-tron-minimalist-white',
+    'Áo thun nam màu trắng trơn cổ tròn phom regular tối giản và thanh lịch. Sợi bông cotton chải kỹ mềm mịn, co giãn nhẹ và thấm hút mồ hôi tối đa.',
+    '100% Cotton Chải Kỹ Cao Cấp',
     'men',
     false,
     true
@@ -450,10 +451,10 @@ VALUES
      'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&auto=format&fit=crop&q=80',
      'Áo khoác bomber nam minimalist chống nước', 1, true),
 
-    -- 10. Ảnh ÁO BA LỖ THỂ THAO (Chuẩn xác 100% hình áo ba lỗ thể thao)
+    -- 10. Ảnh ÁO THUN TRƠN CỔ TRÒN (Chuẩn hình áo thun trắng cộc tay cổ tròn)
     ('40000000-0000-0000-0000-000000000010', '20000000-0000-0000-0000-000000000010',
      'https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=800&auto=format&fit=crop&q=80',
-     'Áo ba lỗ thể thao nam Quick-Dry', 1, true)
+     'Áo thun nam trắng trơn cổ tròn Minimalist MOVEN', 1, true)
 ON CONFLICT (id) DO UPDATE SET
     product_id = EXCLUDED.product_id,
     image_path = EXCLUDED.image_path,

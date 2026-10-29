@@ -50,11 +50,21 @@ class AppButton extends StatelessWidget {
         children: [
           icon!,
           const SizedBox(width: AppDimensions.space8),
-          Text(label),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       );
     } else {
-      buttonContent = Text(label);
+      buttonContent = Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
     }
 
     Widget button;

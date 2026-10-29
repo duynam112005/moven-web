@@ -35,3 +35,18 @@ _Avoid_: Payment condition, cash state.
 **Order Status History**:
 An immutable audit log recording every transition of an order's fulfillment state, capturing timestamps, the actor responsible, and operational notes.
 _Avoid_: Order logs, status audit, tracking timeline.
+
+## Authentication & Account Recovery
+
+**Password Recovery**:
+The business process enabling a verified customer to securely re-establish access to their account after forgetting their password, initiated via an encrypted verification link sent to their registered email.
+_Avoid_: Password reset request, account unlock, credentials restore.
+
+**Recovery Link**:
+A time-limited, single-use secure URI delivered to a customer's registered email address that grants temporary authorization to establish a new account password.
+_Avoid_: Reset token URL, activation link, magic link.
+
+**Recovery Session**:
+A temporary, restricted authorization state established when a customer verifies their identity through a valid Recovery Link, dedicated exclusively to submitting a new password.
+_Avoid_: User session, customer login, elevated token.
+

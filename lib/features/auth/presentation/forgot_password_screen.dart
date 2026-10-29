@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -32,12 +33,33 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final redirectTo = _resolveRedirectUrl();
     final success = await ref
         .read(authControllerProvider.notifier)
-        .sendPasswordResetEmail(_emailController.text.trim());
+        .sendPasswordResetEmail(
+          _emailController.text.trim(),
+          redirectTo: redirectTo,
+        );
 
     if (mounted && success) {
       setState(() => _emailSent = true);
+    }
+  }
+
+  /// Tính toán URL điều hướng sau khi người dùng bấm xác nhận trong email
+  String? _resolveRedirectUrl() {
+    if (!kIsWeb) return null;
+    try {
+      final base = Uri.base;
+      final origin = base.origin;
+      if (origin.isEmpty) return null;
+
+      if (base.toString().contains('#')) {
+        return '$origin/#${RouteNames.resetPasswordPath}';
+      }
+      return '$origin${RouteNames.resetPasswordPath}';
+    } catch (_) {
+      return null;
     }
   }
 

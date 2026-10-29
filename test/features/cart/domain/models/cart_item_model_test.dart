@@ -110,5 +110,48 @@ void main() {
       expect(model.displayVariantLabel, 'Size 30 / Beige');
       expect(model.inStock, true);
     });
+
+    test('Lấy ảnh fallback is_primary khi variant_id trong ảnh là null', () {
+      final mockJson = {
+        'id': 'item-456',
+        'cart_id': 'cart-456',
+        'variant_id': 'var-999',
+        'quantity': 1,
+        'created_at': '2026-10-25T10:00:00.000Z',
+        'updated_at': '2026-10-25T10:00:00.000Z',
+        'product_variants': {
+          'id': 'var-999',
+          'sku': 'MVN-TSH-WHT-L',
+          'size': 'L',
+          'color_name': 'Trắng',
+          'price': 199000,
+          'stock_quantity': 5,
+          'is_active': true,
+          'products': {
+            'id': 'prod-002',
+            'name': 'Áo Thun Trắng',
+            'slug': 'ao-thun-trang',
+            'is_active': true,
+            'product_images': [
+              {
+                'id': 'img-sub',
+                'variant_id': null,
+                'image_path': 'products/sub.jpg',
+                'is_primary': false,
+              },
+              {
+                'id': 'img-primary',
+                'variant_id': null,
+                'image_path': 'products/primary.jpg',
+                'is_primary': true,
+              },
+            ],
+          },
+        },
+      };
+
+      final model = CartItemModel.fromJson(mockJson);
+      expect(model.imageUrl, 'products/primary.jpg');
+    });
   });
 }

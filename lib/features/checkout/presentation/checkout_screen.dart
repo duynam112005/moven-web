@@ -14,6 +14,7 @@ import '../../../core/widgets/empty_state_view.dart';
 import '../../../core/widgets/error_state_view.dart';
 import '../../cart/data/cart_providers.dart';
 import '../../cart/domain/models/cart_item_model.dart';
+import '../../catalog/data/storage_repository.dart';
 import '../../profile/data/address_repository.dart';
 import '../../profile/domain/models/address.dart';
 import '../../profile/presentation/widgets/address_dialog.dart';
@@ -194,6 +195,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
         if (!mounted) return;
         ref.read(checkoutControllerProvider.notifier).reset();
+        ref
+            .read(selectedCartItemIdsProvider.notifier)
+            .removeItems(items.map((i) => i.id));
         await ref.read(cartNotifierProvider.notifier).loadCart();
 
         if (!mounted) return;
@@ -270,7 +274,25 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             );
           }
 
-          final subtotal = ref.watch(cartSubtotalProvider);
+          final selectedItems = ref.watch(selectedCartItemsProvider);
+          if (selectedItems.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    vertical: AppDimensions.space64),
+                child: EmptyStateView(
+                  icon: Icons.check_box_outline_blank,
+                  title: 'Chưa có sản phẩm nào được chọn',
+                  description:
+                      'Vui lòng quay lại giỏ hàng và tick chọn các sản phẩm bạn muốn đặt hàng.',
+                  actionLabel: 'Quay lại giỏ hàng',
+                  onAction: () => context.go(RouteNames.cartPath),
+                ),
+              ),
+            );
+          }
+
+          final subtotal = ref.watch(selectedCartSubtotalProvider);
           final shippingFeeAsync = ref.watch(defaultShippingFeeProvider);
           final shippingFee = shippingFeeAsync.valueOrNull ?? 20000;
           final totalAmount = subtotal + shippingFee;
@@ -284,7 +306,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               if (isDesktop) {
                 return _buildDesktopCheckout(
                   context,
-                  items,
+                  selectedItems,
                   subtotal,
                   shippingFee,
                   totalAmount,
@@ -293,7 +315,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               }
               return _buildMobileCheckout(
                 context,
-                items,
+                selectedItems,
                 subtotal,
                 shippingFee,
                 totalAmount,
@@ -383,7 +405,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     int totalAmount,
     bool isSubmitting,
   ) {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(AppDimensions.space16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -771,18 +793,33 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 const Divider(height: AppDimensions.space16),
             itemBuilder: (context, index) {
               final item = items[index];
+              final storageRepo = ref.watch(storageRepositoryProvider);
+              final resolvedImageUrl =
+                  (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+                      ? storageRepo.getProductImageUrl(item.imageUrl)
+                      : '';
+
               return Row(
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(AppDimensions.radius4),
                     child: Container(
-                      width: 48,
-                      height: 58,
-                      color: AppColors.surfaceVariant,
-                      child: item.imageUrl != null
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceVariant,
+                        borderRadius:
+                            BorderRadius.circular(AppDimensions.radius4),
+                        border: Border.all(
+                          color: AppColors.border.withValues(alpha: 0.6),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: resolvedImageUrl.isNotEmpty
                           ? Image.network(
-                              item.imageUrl!,
+                              resolvedImageUrl,
                               fit: BoxFit.cover,
+                              alignment: Alignment.center,
                               errorBuilder: (_, _, _) => const Icon(
                                 Icons.checkroom_outlined,
                                 size: 20,

@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'
+    show AuthChangeEvent, AuthState, User;
 import '../../../core/config/app_config.dart';
+import '../../../core/network/supabase_client.dart';
 import '../domain/models/banner.dart';
 import '../domain/models/category.dart';
 import '../domain/models/catalog_filter.dart';
@@ -44,8 +47,38 @@ final featuredProductsProvider = FutureProvider<List<Product>>((ref) async {
   }
 });
 
+/// Thời hạn tối đa cho một phiên tìm kiếm sản phẩm trước khi tự động đặt lại (15 phút)
+const Duration catalogSearchSessionDuration = Duration(minutes: 15);
+
+/// Provider lưu thời điểm thực hiện tìm kiếm sản phẩm gần nhất
+final catalogSearchTimestampProvider = StateProvider<DateTime?>((ref) => null);
+
+/// Kiểm tra xem phiên tìm kiếm sản phẩm đã hết hạn hay chưa (mặc định sau 15 phút)
+bool isCatalogSearchExpired(DateTime? timestamp, [DateTime? currentTime]) {
+  if (timestamp == null) return false;
+  final now = currentTime ?? DateTime.now();
+  return now.difference(timestamp) > catalogSearchSessionDuration;
+}
+
 /// Provider lưu trạng thái bộ lọc của Catalog
 final catalogFilterProvider = StateProvider<CatalogFilter>((ref) {
+  // Tự động reset bộ lọc khi người dùng đăng xuất
+  ref.listen<AsyncValue<AuthState>>(authStateChangesProvider, (_, next) {
+    if (next.value?.event == AuthChangeEvent.signedOut) {
+      ref.controller.state = const CatalogFilter();
+      ref.read(catalogPageProvider.notifier).state = 1;
+      ref.read(catalogSearchTimestampProvider.notifier).state = null;
+    }
+  });
+
+  ref.listen<User?>(currentUserProvider, (previous, next) {
+    if (previous != null && next == null) {
+      ref.controller.state = const CatalogFilter();
+      ref.read(catalogPageProvider.notifier).state = 1;
+      ref.read(catalogSearchTimestampProvider.notifier).state = null;
+    }
+  });
+
   return const CatalogFilter();
 });
 

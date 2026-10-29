@@ -65,9 +65,19 @@ class AdminDashboardScreen extends ConsumerWidget {
         final titleCol = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Tổng quan kinh doanh',
-              style: AppTypography.headlineLarge.copyWith(fontWeight: FontWeight.w700),
+            Row(
+              children: [
+                Text(
+                  'Tổng quan kinh doanh',
+                  style: AppTypography.headlineLarge.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(width: AppDimensions.space8),
+                IconButton(
+                  tooltip: 'Làm mới số liệu',
+                  icon: const Icon(Icons.refresh, size: 20),
+                  onPressed: () => ref.invalidate(dashboardMetricsProvider),
+                ),
+              ],
             ),
             const SizedBox(height: AppDimensions.space4),
             Text(

@@ -121,7 +121,216 @@ void main() {
 
       // Xác nhận các thành phần tóm tắt đơn hàng hiển thị
       expect(find.text('Tóm tắt đơn hàng'), findsOneWidget);
+      expect(find.textContaining('Tiến hành đặt hàng COD'), findsOneWidget);
+      expect(find.textContaining('Chọn tất cả'), findsOneWidget);
+    });
+
+    testWidgets(
+        'Cho phép chọn tất cả, bỏ chọn tất cả và cập nhật trạng thái nút đặt hàng',
+        (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final items = [
+        CartItemModel(
+          id: 'item-1',
+          cartId: 'cart-1',
+          variantId: 'var-1',
+          quantity: 1,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          productName: 'Áo Thun 1',
+          productSlug: 'ao-thun-1',
+          sku: 'MVN-1',
+          size: 'M',
+          colorName: 'Đen',
+          price: 100000,
+          stockQuantity: 10,
+          isActive: true,
+        ),
+        CartItemModel(
+          id: 'item-2',
+          cartId: 'cart-1',
+          variantId: 'var-2',
+          quantity: 1,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          productName: 'Áo Polo 2',
+          productSlug: 'ao-polo-2',
+          sku: 'MVN-2',
+          size: 'L',
+          colorName: 'Trắng',
+          price: 150000,
+          stockQuantity: 5,
+          isActive: true,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        createTestWidget(
+          overrides: [
+            isAuthenticatedProvider.overrideWithValue(true),
+            currentUserProvider.overrideWithValue(mockUser),
+            cartNotifierProvider.overrideWith(
+              (ref) => _MockCartNotifier(AsyncValue.data(items)),
+            ),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Ban đầu mặc định cả 2 sản phẩm còn hàng đều được chọn (Shopee style)
+      expect(find.textContaining('Đã chọn: 2'), findsOneWidget);
+      expect(find.text('Tiến hành đặt hàng COD (2)'), findsOneWidget);
+
+      // Nhấn "Bỏ chọn tất cả"
+      final deselectAllBtn = find.text('Bỏ chọn tất cả');
+      expect(deselectAllBtn, findsOneWidget);
+      await tester.tap(deselectAllBtn);
+      await tester.pumpAndSettle();
+
+      // Sau khi bỏ chọn tất cả: số lượng chọn = 0, thông báo nhắc nhở xuất hiện, nút bị disabled
+      expect(find.textContaining('Đã chọn: 0'), findsOneWidget);
+      expect(
+        find.text(
+            'Vui lòng tick chọn ít nhất 1 sản phẩm để tiến hành đặt hàng.'),
+        findsOneWidget,
+      );
       expect(find.text('Tiến hành đặt hàng COD'), findsOneWidget);
+
+      // Nhấn checkbox "Chọn tất cả" để chọn lại
+      final selectAllCheckbox = find.byType(Checkbox).first;
+      await tester.tap(selectAllCheckbox);
+      await tester.pumpAndSettle();
+
+      // Sau khi chọn lại tất cả: cả 2 món được chọn trở lại
+      expect(find.textContaining('Đã chọn: 2'), findsOneWidget);
+      expect(find.text('Tiến hành đặt hàng COD (2)'), findsOneWidget);
+    });
+
+    testWidgets('Sản phẩm hết hàng bị vô hiệu hóa checkbox không cho phép chọn',
+        (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final items = [
+        CartItemModel(
+          id: 'item-1',
+          cartId: 'cart-1',
+          variantId: 'var-1',
+          quantity: 1,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          productName: 'Áo Còn Hàng',
+          productSlug: 'ao-con-hang',
+          sku: 'MVN-IN-STOCK',
+          size: 'M',
+          colorName: 'Đen',
+          price: 200000,
+          stockQuantity: 10,
+          isActive: true,
+        ),
+        CartItemModel(
+          id: 'item-2',
+          cartId: 'cart-1',
+          variantId: 'var-2',
+          quantity: 1,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          productName: 'Áo Hết Hàng',
+          productSlug: 'ao-het-hang',
+          sku: 'MVN-OUT-OF-STOCK',
+          size: 'L',
+          colorName: 'Trắng',
+          price: 300000,
+          stockQuantity: 0,
+          isActive: true,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        createTestWidget(
+          overrides: [
+            isAuthenticatedProvider.overrideWithValue(true),
+            currentUserProvider.overrideWithValue(mockUser),
+            cartNotifierProvider.overrideWith(
+              (ref) => _MockCartNotifier(AsyncValue.data(items)),
+            ),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Chỉ có 1 sản phẩm còn hàng được chọn
+      expect(find.textContaining('Chọn tất cả (1)'), findsOneWidget);
+      expect(find.textContaining('Đã chọn: 1'), findsOneWidget);
+      expect(find.text('Tiến hành đặt hàng COD (1)'), findsOneWidget);
+
+      // Checkbox của sản phẩm hết hàng bị disable (onChanged == null)
+      final checkboxes = tester.widgetList<Checkbox>(find.byType(Checkbox)).toList();
+      // Checkbox đầu là "Chọn tất cả", checkbox 2 là món còn hàng, checkbox 3 là món hết hàng
+      expect(checkboxes.length, 3);
+      expect(checkboxes[1].onChanged, isNotNull);
+      expect(checkboxes[2].onChanged, isNull);
+    });
+
+    testWidgets(
+        'Hình ảnh sản phẩm trong giỏ sử dụng khung vuông chuẩn Shopee và fill vừa vặn khung',
+        (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final items = [
+        CartItemModel(
+          id: 'item-img',
+          cartId: 'cart-img',
+          variantId: 'var-img',
+          quantity: 1,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          productName: 'Áo Thun Image Scale',
+          productSlug: 'ao-thun-image-scale',
+          sku: 'MVN-IMG',
+          price: 200000,
+          stockQuantity: 10,
+          imageUrl: 'https://example.com/product.jpg',
+          isActive: true,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        createTestWidget(
+          overrides: [
+            isAuthenticatedProvider.overrideWithValue(true),
+            currentUserProvider.overrideWithValue(mockUser),
+            cartNotifierProvider.overrideWith(
+              (ref) => _MockCartNotifier(AsyncValue.data(items)),
+            ),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final imageFinder = find.byType(Image);
+      expect(imageFinder, findsOneWidget);
+      final imageWidget = tester.widget<Image>(imageFinder);
+      expect(imageWidget.fit, BoxFit.cover);
+      expect(imageWidget.alignment, Alignment.center);
     });
   });
 }

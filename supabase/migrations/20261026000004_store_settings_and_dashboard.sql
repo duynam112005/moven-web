@@ -183,8 +183,8 @@ BEGIN
     SELECT COALESCE(SUM(total_amount), 0) INTO v_delivered_revenue
     FROM public.orders
     WHERE status = 'delivered'
-      AND (p_start_date IS NULL OR delivered_at >= p_start_date)
-      AND (p_end_date IS NULL OR delivered_at <= p_end_date);
+      AND (p_start_date IS NULL OR COALESCE(delivered_at, updated_at, created_at) >= p_start_date)
+      AND (p_end_date IS NULL OR COALESCE(delivered_at, updated_at, created_at) <= p_end_date);
 
     -- 4. Order counts by status
     WITH counts AS (
@@ -294,3 +294,7 @@ BEGIN
     );
 END;
 $$;
+
+-- Grant permissions to authenticated users
+GRANT EXECUTE ON FUNCTION public.admin_get_dashboard_metrics(TIMESTAMPTZ, TIMESTAMPTZ) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_update_store_settings(INTEGER, INTEGER, TEXT, TEXT, TEXT) TO authenticated;

@@ -1,12 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:moven/features/admin/domain/models/dashboard_metrics.dart';
+import 'package:moven/features/orders/data/orders_repository.dart';
+import 'package:moven/features/orders/domain/models/order.dart';
+import 'package:moven/features/orders/domain/models/order_status.dart';
 
 /// Repository quản lý truy vấn số liệu KPI cho Admin Dashboard
 class DashboardRepository {
   final SupabaseClient? _client;
+  final OrdersRepository? _ordersRepository;
 
-  DashboardRepository([this._client]);
+  DashboardRepository([this._client, this._ordersRepository]);
 
   bool get _isSupabaseConfigured => _client != null;
 
@@ -133,22 +137,72 @@ class DashboardRepository {
     DateTime? endDate,
   }) async {
     if (!_isSupabaseConfigured) {
-      return _mockMetrics;
+      return _generateDynamicMetrics(startDate: startDate, endDate: endDate);
     }
 
     try {
       final res = await _client!.rpc(
         'admin_get_dashboard_metrics',
         params: {
-          'p_start_date': startDate?.toIso8601String(),
-          'p_end_date': endDate?.toIso8601String(),
+          'p_start_date': startDate?.toUtc().toIso8601String(),
+          'p_end_date': endDate?.toUtc().toIso8601String(),
         },
       );
 
       return DashboardMetrics.fromJson(res as Map<String, dynamic>);
     } catch (e) {
       if (kDebugMode) debugPrint('[DashboardRepository] getDashboardMetrics error: $e');
+      return _generateDynamicMetrics(startDate: startDate, endDate: endDate);
+    }
+  }
+
+  /// Tính toán số liệu Dashboard động từ OrdersRepository trong chế độ Preview hoặc Fallback
+  DashboardMetrics _generateDynamicMetrics({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    final orders = _ordersRepository?.mockOrders;
+    if (orders == null || orders.isEmpty) {
       return _mockMetrics;
     }
+
+    // 1. Doanh thu đơn giao thành công (delivered) trong khoảng thời gian lọc (ADR-0005)
+    final deliveredOrders = orders.where((o) => o.status == OrderStatus.delivered).where((o) {
+      final date = o.deliveredAt ?? o.updatedAt ?? o.createdAt;
+      if (startDate != null && date.isBefore(startDate)) return false;
+      if (endDate != null && date.isAfter(endDate)) return false;
+      return true;
+    });
+    final deliveredRevenue = deliveredOrders.fold<int>(0, (sum, o) => sum + o.totalAmount);
+
+    // 2. Thống kê số lượng đơn theo từng trạng thái
+    final filteredForCounts = orders.where((o) {
+      if (startDate != null && o.createdAt.isBefore(startDate)) return false;
+      if (endDate != null && o.createdAt.isAfter(endDate)) return false;
+      return true;
+    });
+    final Map<String, int> counts = {};
+    for (final s in OrderStatus.values) {
+      counts[s.value] = filteredForCounts.where((o) => o.status == s).length;
+    }
+
+    // 3. Danh sách 5 đơn hàng mới nhất
+    final sortedOrders = List<Order>.from(orders)
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final recent = sortedOrders.take(5).map((o) => RecentOrderItem(
+      id: o.id,
+      orderCode: o.orderCode,
+      recipientName: o.recipientName,
+      totalAmount: o.totalAmount,
+      status: o.status.value,
+      paymentStatus: o.paymentStatus,
+      createdAt: o.createdAt,
+    )).toList();
+
+    return _mockMetrics.copyWith(
+      deliveredRevenue: deliveredRevenue,
+      statusCounts: counts,
+      recentOrders: recent,
+    );
   }
 }

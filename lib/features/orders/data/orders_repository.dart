@@ -13,6 +13,9 @@ class OrdersRepository {
   // Bộ nhớ đệm Mock Data khi chạy ở chế độ UI Preview hoặc Supabase chưa kết nối
   final List<Order> _mockOrders = [];
 
+  /// Danh sách đơn hàng giả lập (chỉ đọc) dùng cho preview/fallback
+  List<Order> get mockOrders => List.unmodifiable(_mockOrders);
+
   OrdersRepository(this._client) {
     _initMockOrders();
   }
@@ -441,66 +444,6 @@ class OrdersRepository {
     }
   }
 
-  /// Khách hàng xác nhận đã nhận được hàng (khi đơn đang ở shipping)
-  Future<void> customerConfirmDelivery({
-    required String orderCode,
-  }) async {
-    final client = _client;
-    if (client == null) {
-      final idx = _mockOrders.indexWhere(
-        (o) => o.orderCode.toLowerCase() == orderCode.toLowerCase(),
-      );
-      if (idx != -1) {
-        final current = _mockOrders[idx];
-        if (!current.status.canCustomerConfirmDelivery) {
-          throw const ValidationException(
-            'Chỉ có thể xác nhận nhận hàng khi đơn đang ở trạng thái Đang giao hàng.',
-          );
-        }
-        final now = DateTime.now();
-        final updatedHist = List<OrderStatusHistory>.from(current.statusHistory)
-          ..add(
-            OrderStatusHistory(
-              id: 'hist-${now.millisecondsSinceEpoch}',
-              orderId: current.id,
-              fromStatus: current.status,
-              toStatus: OrderStatus.delivered,
-              actorId: current.userId,
-              note: 'Khách hàng xác nhận đã nhận được kiện hàng',
-              createdAt: now,
-            ),
-          );
-
-        _mockOrders[idx] = current.copyWith(
-          status: OrderStatus.delivered,
-          deliveredAt: now,
-          updatedAt: now,
-          statusHistory: updatedHist,
-        );
-      }
-      return;
-    }
-
-    try {
-      await client.rpc(
-        'customer_confirm_delivery',
-        params: {
-          'p_order_code': orderCode,
-        },
-      );
-    } on PostgrestException catch (e) {
-      if (e.code == 'P0004' || e.code == 'P0002') {
-        throw ValidationException(e.message);
-      } else if (e.code == 'P0001') {
-        throw const AppAuthException('Bạn không có quyền xác nhận đơn hàng này.');
-      }
-      throw ServerException('Không thể xác nhận nhận hàng: ${e.message}');
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException('Không thể xác nhận nhận hàng: $e');
-    }
-  }
-
   // ==========================================
   // QUẢN TRỊ VIÊN (ADMIN APIS)
   // ==========================================
@@ -587,6 +530,7 @@ class OrdersRepository {
 
         _mockOrders[idx] = current.copyWith(
           status: newStatus,
+          paymentStatus: newStatus == OrderStatus.delivered ? 'paid' : current.paymentStatus,
           updatedAt: DateTime.now(),
           deliveredAt: newStatus == OrderStatus.delivered ? DateTime.now() : null,
           cancelledAt: newStatus == OrderStatus.cancelled ? DateTime.now() : null,

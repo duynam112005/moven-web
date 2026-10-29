@@ -41,15 +41,22 @@ class FakeAuthRepository implements AuthRepository {
     return AuthResponse();
   }
 
+  bool signOutCalled = false;
+  String? lastResetEmail;
+  String? lastRedirectTo;
+
   @override
   Future<void> signOut() async {
+    signOutCalled = true;
     if (shouldThrow) {
       throw const AuthException('Sign out error');
     }
   }
 
   @override
-  Future<void> resetPasswordForEmail(String email) async {
+  Future<void> resetPasswordForEmail(String email, {String? redirectTo}) async {
+    lastResetEmail = email;
+    lastRedirectTo = redirectTo;
     if (shouldThrow) {
       throw AuthException(exceptionMessage ?? 'Rate limit exceeded');
     }
@@ -194,10 +201,15 @@ void main() {
       );
     });
 
-    test('6. sendPasswordResetEmail success and error handling', () async {
-      // Success
-      final ok = await controller.sendPasswordResetEmail('user@example.com');
+    test('6. sendPasswordResetEmail success and error handling with redirectTo', () async {
+      // Success with redirectTo
+      final ok = await controller.sendPasswordResetEmail(
+        'user@example.com',
+        redirectTo: 'http://localhost:3000/reset-password',
+      );
       expect(ok, isTrue);
+      expect(fakeRepo.lastResetEmail, 'user@example.com');
+      expect(fakeRepo.lastRedirectTo, 'http://localhost:3000/reset-password');
       expect(
         controller.state.successMessage,
         contains('Email khôi phục đã được gửi'),
@@ -214,9 +226,11 @@ void main() {
       );
     });
 
-    test('7. updatePassword updates password and maps success message', () async {
+    test('7. updatePassword updates password, signs out recovery session, and maps success message', () async {
+      expect(fakeRepo.signOutCalled, isFalse);
       final ok = await controller.updatePassword('newsecurepass123');
       expect(ok, isTrue);
+      expect(fakeRepo.signOutCalled, isTrue);
       expect(
         controller.state.successMessage,
         contains('Mật khẩu đã được cập nhật thành công'),

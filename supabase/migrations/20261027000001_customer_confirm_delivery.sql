@@ -50,11 +50,12 @@ BEGIN
             USING ERRCODE = 'P0004';
     END IF;
 
-    -- 5. Update order status to delivered
+    -- 5. Update order status to delivered & payment_status to paid
     UPDATE public.orders
     SET 
         status = 'delivered',
         delivered_at = clock_timestamp(),
+        payment_status = 'paid',
         updated_at = clock_timestamp()
     WHERE id = v_order.id;
 

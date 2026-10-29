@@ -102,10 +102,16 @@ class AuthRepository {
     await _safeClient.auth.signOut();
   }
 
-  /// Gửi email khôi phục mật khẩu
-  Future<void> resetPasswordForEmail(String email) async {
+  /// Gửi email khôi phục mật khẩu.
+  ///
+  /// Nhận `redirectTo` tuỳ chọn để chỉ định URL quay lại sau khi người dùng nhấn xác nhận trong email.
+  Future<void> resetPasswordForEmail(
+    String email, {
+    String? redirectTo,
+  }) async {
     await _safeClient.auth.resetPasswordForEmail(
       email.trim(),
+      redirectTo: redirectTo,
     );
   }
 
