@@ -150,4 +150,97 @@ void main() {
     // Nút Thêm vào giỏ hàng
     expect(find.text('Thêm vào giỏ hàng'), findsOneWidget);
   });
+
+  testWidgets(
+      'ProductDetailScreen tự động đồng bộ khi dữ liệu sản phẩm cập nhật (đổi tên, đổi ảnh)',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final currentProductProvider =
+        StateProvider<Product>((ref) => testProduct);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          storageRepositoryProvider
+              .overrideWithValue(FakeStorageRepository()),
+          productDetailProvider('ao-thun-co-tron-basic').overrideWith(
+            (ref) => Future.value(ref.watch(currentProductProvider)),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: ProductDetailScreen(slug: 'ao-thun-co-tron-basic'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Ban đầu hiển thị tên cũ
+    expect(find.text('Áo Thun Cổ Tròn Basic'), findsNWidgets(2));
+    expect(find.text('Áo Thun Cổ Tròn Cao Cấp 2026'), findsNothing);
+
+    // Giả lập admin cập nhật tên và mô tả sản phẩm
+    final element = tester.element(find.byType(ProductDetailScreen));
+    final container = ProviderScope.containerOf(element);
+    final updatedProduct = testProduct.copyWith(
+      name: 'Áo Thun Cổ Tròn Cao Cấp 2026',
+      description: 'Chất liệu nâng cấp 100% Pima Cotton.',
+    );
+    container.read(currentProductProvider.notifier).state = updatedProduct;
+
+    await tester.pumpAndSettle();
+
+    // Màn hình chi tiết lập tức cập nhật thông tin mới
+    expect(find.text('Áo Thun Cổ Tròn Cao Cấp 2026'), findsNWidgets(2));
+    expect(find.text('Chất liệu nâng cấp 100% Pima Cotton.'), findsOneWidget);
+    expect(find.text('Áo Thun Cổ Tròn Basic'), findsNothing);
+  });
+
+  testWidgets(
+      'ProductDetailScreen hiển thị ảnh chính với khung hình chữ nhật tỷ lệ 3:4 chuẩn thời trang',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          storageRepositoryProvider
+              .overrideWithValue(FakeStorageRepository()),
+          productDetailProvider('ao-thun-co-tron-basic').overrideWith(
+            (ref) => Future.value(testProduct),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: ProductDetailScreen(slug: 'ao-thun-co-tron-basic'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Xác nhận có AspectRatio tỷ lệ 3:4 (0.75) dành cho ảnh chính của gallery
+    final aspectRatioFinder = find.byWidgetPredicate(
+      (widget) => widget is AspectRatio && widget.aspectRatio == 3 / 4,
+    );
+    expect(aspectRatioFinder, findsOneWidget);
+  });
 }

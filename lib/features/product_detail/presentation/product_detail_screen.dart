@@ -42,17 +42,56 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   int _quantity = 1;
   bool _isInitialized = false;
 
-  void _initializeSelection(Product product) {
-    if (_isInitialized) return;
-    final active = product.activeVariants;
-    if (active.isNotEmpty) {
-      // Ưu tiên chọn biến thể còn hàng đầu tiên
-      _selectedVariant = active.firstWhere(
-        (v) => v.inStock,
-        orElse: () => active.first,
+  @override
+  void didUpdateWidget(covariant ProductDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.slug != widget.slug) {
+      _isInitialized = false;
+      _selectedVariant = null;
+      _selectedImage = null;
+      _quantity = 1;
+    }
+  }
+
+  void _syncSelectionWithProduct(Product product) {
+    final variants = product.variants;
+    final images = product.images;
+
+    // 1. Đồng bộ hoặc khởi tạo variant được chọn
+    if (!_isInitialized ||
+        _selectedVariant == null ||
+        !variants.any((v) => v.id == _selectedVariant!.id)) {
+      final active = product.activeVariants;
+      if (active.isNotEmpty) {
+        // Ưu tiên chọn biến thể còn hàng đầu tiên
+        _selectedVariant = active.firstWhere(
+          (v) => v.inStock,
+          orElse: () => active.first,
+        );
+      } else {
+        _selectedVariant = variants.firstOrNull;
+      }
+    } else {
+      // Cập nhật lại thuộc tính của variant đã chọn
+      _selectedVariant = variants.firstWhere(
+        (v) => v.id == _selectedVariant!.id,
+        orElse: () => _selectedVariant!,
       );
     }
-    _selectedImage = product.imageForVariant(_selectedVariant?.id);
+
+    // 2. Đồng bộ hoặc khởi tạo image được chọn
+    if (!_isInitialized ||
+        _selectedImage == null ||
+        !images.any((img) => img.id == _selectedImage!.id)) {
+      _selectedImage = product.imageForVariant(_selectedVariant?.id);
+    } else {
+      // Cập nhật lại thuộc tính mới nhất của ảnh đã chọn (ví dụ imagePath mới)
+      _selectedImage = images.firstWhere(
+        (img) => img.id == _selectedImage!.id,
+        orElse: () => _selectedImage!,
+      );
+    }
+
     _isInitialized = true;
   }
 
@@ -121,7 +160,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           );
         }
 
-        _initializeSelection(product);
+        _syncSelectionWithProduct(product);
 
         return Center(
           child: ConstrainedBox(
@@ -244,27 +283,29 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
     return Column(
       children: [
-        // Ảnh lớn chính
-        Container(
-          width: double.infinity,
-          height: 480,
-          decoration: BoxDecoration(
-            color: AppColors.surfaceVariant,
-            borderRadius: BorderRadius.circular(AppDimensions.radius12),
-            border: Border.all(color: AppColors.border),
+        // Ảnh lớn chính hình chữ nhật chuẩn tỷ lệ 3:4 thời trang
+        AspectRatio(
+          aspectRatio: 3 / 4,
+          child: Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceVariant,
+              borderRadius: BorderRadius.circular(AppDimensions.radius12),
+              border: Border.all(color: AppColors.border),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: mainImageUrl.isNotEmpty
+                ? Image.network(
+                    mainImageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const _DetailPlaceholder(),
+                  )
+                : const _DetailPlaceholder(),
           ),
-          clipBehavior: Clip.antiAlias,
-          child: mainImageUrl.isNotEmpty
-              ? Image.network(
-                  mainImageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const _DetailPlaceholder(),
-                )
-              : const _DetailPlaceholder(),
         ),
 
-        // Hàng ảnh thumbnails thu nhỏ (nếu có nhiều ảnh)
+        // Hàng ảnh thumbnails thu nhỏ (nếu có nhiều ảnh) hình chữ nhật 3:4 (60x80)
         if (images.length > 1) ...[
           const SizedBox(height: AppDimensions.space12),
           SizedBox(
@@ -284,7 +325,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   onTap: () => _onImageSelected(img),
                   borderRadius: BorderRadius.circular(AppDimensions.radius8),
                   child: Container(
-                    width: 70,
+                    width: 60,
                     height: 80,
                     decoration: BoxDecoration(
                       color: AppColors.surfaceVariant,
