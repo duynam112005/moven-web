@@ -19,7 +19,7 @@ class StorageRepository {
 
   StorageRepository(this._client);
 
-  /// Suy đoán MIME type từ đuôi tệp tin (hỗ trợ whitelist Supabase Storage)
+  /// Suy đoán MIME type từ đuôi tệp tin (tương thích whitelist Supabase Storage: jpeg, png, webp, gif)
   static String inferContentType(String fileName) {
     final parts = fileName.split('.');
     if (parts.length > 1) {
@@ -33,6 +33,11 @@ class StorageRepository {
           return 'image/gif';
         case 'jpg':
         case 'jpeg':
+        case 'jfif':
+        case 'pjpeg':
+        case 'pjp':
+          return 'image/jpeg';
+        default:
           return 'image/jpeg';
       }
     }
@@ -172,10 +177,14 @@ class StorageRepository {
 
   /// Chuẩn hóa tên file, loại bỏ ký tự đặc biệt
   String _sanitizeFileName(String name) {
-    return name
+    final clean = name
         .toLowerCase()
         .replaceAll(RegExp(r'[^a-z0-9._-]'), '_')
         .replaceAll(RegExp(r'_+'), '_');
+    if (!clean.contains('.')) {
+      return '$clean.jpg';
+    }
+    return clean;
   }
 }
 

@@ -171,10 +171,18 @@ class _AdminProductFormScreenState
         );
       }
 
-      // Invalidate caches
-      ref.invalidate(adminProductsProvider(const AdminProductQuery()));
+      // Invalidate caches across all screens
+      ref.invalidate(adminProductsProvider);
+      ref.invalidate(adminProductDetailProvider);
       ref.invalidate(catalogProductsProvider);
       ref.invalidate(featuredProductsProvider);
+      ref.invalidate(productDetailProvider);
+      ref.invalidate(activeCategoriesProvider);
+      ref.invalidate(adminCategoriesProvider);
+      if (_original != null) {
+        ref.invalidate(productDetailProvider(_original!.slug));
+      }
+      ref.invalidate(productDetailProvider(_slugCtrl.text.trim()));
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -223,9 +231,12 @@ class _AdminProductFormScreenState
     try {
       await ref.read(catalogRepositoryProvider).deleteProduct(widget.productId!);
       ref.invalidate(adminProductsProvider);
+      ref.invalidate(adminProductDetailProvider);
       ref.invalidate(catalogProductsProvider);
       ref.invalidate(featuredProductsProvider);
       ref.invalidate(activeCategoriesProvider);
+      ref.invalidate(adminCategoriesProvider);
+      ref.invalidate(productDetailProvider);
       if (_original != null) {
         ref.invalidate(productDetailProvider(_original!.slug));
       }

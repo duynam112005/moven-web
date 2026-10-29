@@ -114,7 +114,7 @@ final catalogProductsProvider =
 
 /// Provider chi tiết sản phẩm theo slug
 final productDetailProvider =
-    FutureProvider.family<Product?, String>((ref, slug) async {
+    FutureProvider.autoDispose.family<Product?, String>((ref, slug) async {
   if (!AppConfig.isSupabaseConfigured) return null;
   try {
     final repo = ref.watch(catalogRepositoryProvider);

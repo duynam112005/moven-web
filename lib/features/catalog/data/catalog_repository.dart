@@ -1103,6 +1103,41 @@ class CatalogRepository {
 
       // 2. Cập nhật hoặc thêm mới biến thể
       if (variants != null) {
+        final keptVariantIds = variants
+            .where((v) => v.id.isNotEmpty && !v.id.startsWith('temp_'))
+            .map((v) => v.id)
+            .toSet();
+
+        // Xóa hoặc ẩn các biến thể cũ không còn trong danh sách cập nhật
+        try {
+          final existingVars = await _client
+              .from('product_variants')
+              .select('id')
+              .eq('product_id', product.id);
+          final existingVarIds = (existingVars as List)
+              .map((row) => (row as Map<String, dynamic>)['id'] as String)
+              .toList();
+
+          for (final existingId in existingVarIds) {
+            if (!keptVariantIds.contains(existingId)) {
+              try {
+                await _client
+                    .from('product_variants')
+                    .delete()
+                    .eq('id', existingId);
+              } on PostgrestException catch (pe) {
+                // Nếu đã có đơn hàng (foreign key 23503), chuyển sang ẩn biến thể
+                if (pe.code == '23503') {
+                  await _client
+                      .from('product_variants')
+                      .update({'is_active': false})
+                      .eq('id', existingId);
+                }
+              }
+            }
+          }
+        } catch (_) {}
+
         for (final v in variants) {
           if (v.id.isNotEmpty && !v.id.startsWith('temp_')) {
             await _client
@@ -1119,6 +1154,31 @@ class CatalogRepository {
 
       // 3. Cập nhật ảnh
       if (images != null) {
+        final keptImageIds = images
+            .where((img) => img.id.isNotEmpty && !img.id.startsWith('temp_'))
+            .map((img) => img.id)
+            .toSet();
+
+        // Xóa khỏi DB các ảnh cũ của sản phẩm này không còn nằm trong keptImageIds
+        try {
+          final existingImgs = await _client
+              .from('product_images')
+              .select('id')
+              .eq('product_id', product.id);
+          final existingImgIds = (existingImgs as List)
+              .map((row) => (row as Map<String, dynamic>)['id'] as String)
+              .toList();
+
+          for (final existingId in existingImgIds) {
+            if (!keptImageIds.contains(existingId)) {
+              await _client
+                  .from('product_images')
+                  .delete()
+                  .eq('id', existingId);
+            }
+          }
+        } catch (_) {}
+
         for (final img in images) {
           if (img.id.isNotEmpty && !img.id.startsWith('temp_')) {
             await _client
@@ -1131,6 +1191,15 @@ class CatalogRepository {
                 .insert(img.copyWith(productId: product.id).toInsertJson());
           }
         }
+      }
+
+      // Cập nhật mock dataset trong bộ nhớ nếu có (hỗ trợ preview/mock offline)
+      final mockIdx = _mockProducts.indexWhere((p) => p.id == product.id);
+      if (mockIdx != -1) {
+        _mockProducts[mockIdx] = product.copyWith(
+          variants: variants ?? _mockProducts[mockIdx].variants,
+          images: images ?? _mockProducts[mockIdx].images,
+        );
       }
 
       final fullProduct = await getAdminProductById(product.id);
