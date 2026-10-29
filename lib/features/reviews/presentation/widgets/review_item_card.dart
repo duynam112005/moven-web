@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:moven/core/constants/app_colors.dart';
 import 'package:moven/core/constants/app_dimensions.dart';
 import 'package:moven/core/constants/app_typography.dart';
+import 'package:moven/core/utils/date_time_utils.dart';
 import 'package:moven/features/reviews/domain/models/review.dart';
 import 'rating_stars.dart';
 
@@ -28,7 +28,7 @@ class _ReviewItemCardState extends State<ReviewItemCard> {
   @override
   Widget build(BuildContext context) {
     final review = widget.review;
-    final dateStr = DateFormat('dd/MM/yyyy').format(review.createdAt);
+    final dateStr = DateTimeUtils.formatDate(review.createdAt);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:moven/core/constants/app_colors.dart';
 import 'package:moven/core/constants/app_dimensions.dart';
 import 'package:moven/core/constants/app_typography.dart';
 import 'package:moven/core/utils/currency_formatter.dart';
+import 'package:moven/core/utils/date_time_utils.dart';
 import 'package:moven/features/orders/domain/models/order.dart';
 import 'package:moven/features/orders/presentation/customer/widgets/order_status_badge.dart';
 import 'package:moven/features/orders/presentation/providers/orders_providers.dart';
@@ -28,7 +28,7 @@ class AdminOrderDetailDialog extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final dateStr = DateFormat('dd/MM/yyyy HH:mm:ss').format(order.createdAt);
+    final dateStr = DateTimeUtils.formatDateTimeWithSeconds(order.createdAt);
     final canUpdateStatus = order.status.validNextStatusesAdmin.isNotEmpty;
 
     return Dialog(
@@ -394,7 +394,7 @@ class AdminOrderDetailDialog extends ConsumerWidget {
             ),
             child: Column(
               children: order.statusHistory.map((hist) {
-                final time = DateFormat('dd/MM/yyyy HH:mm:ss').format(hist.createdAt);
+                final time = DateTimeUtils.formatDateTimeWithSeconds(hist.createdAt);
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Row(

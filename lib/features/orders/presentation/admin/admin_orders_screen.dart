@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:moven/core/constants/app_colors.dart';
 import 'package:moven/core/constants/app_dimensions.dart';
 import 'package:moven/core/constants/app_typography.dart';
 import 'package:moven/core/utils/currency_formatter.dart';
+import 'package:moven/core/utils/date_time_utils.dart';
 import 'package:moven/core/utils/responsive_layout.dart';
 import 'package:moven/core/widgets/app_loading.dart';
 import 'package:moven/core/widgets/empty_state_view.dart';
@@ -283,7 +283,7 @@ class _AdminOrdersScreenState extends ConsumerState<AdminOrdersScreen> {
 
           // Data Rows
           ...orders.map((order) {
-            final dateStr = DateFormat('dd/MM HH:mm').format(order.createdAt);
+            final dateStr = DateTimeUtils.formatShortDateTime(order.createdAt);
             return TableRow(
               decoration: const BoxDecoration(
                 border: Border(bottom: BorderSide(color: AppColors.border, width: 0.5)),
@@ -517,7 +517,7 @@ class _AdminOrdersScreenState extends ConsumerState<AdminOrdersScreen> {
       separatorBuilder: (_, __) => const SizedBox(height: AppDimensions.space12),
       itemBuilder: (context, index) {
         final order = orders[index];
-        final dateStr = DateFormat('dd/MM/yyyy HH:mm').format(order.createdAt);
+        final dateStr = DateTimeUtils.formatDateTime(order.createdAt);
 
         return Container(
           padding: const EdgeInsets.all(AppDimensions.space16),

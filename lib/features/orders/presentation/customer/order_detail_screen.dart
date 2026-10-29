@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:moven/core/config/app_config.dart';
 import 'package:moven/core/constants/app_colors.dart';
@@ -12,6 +11,7 @@ import 'package:moven/core/errors/app_exception.dart';
 import 'package:moven/core/network/supabase_client.dart';
 import 'package:moven/core/router/route_names.dart';
 import 'package:moven/core/utils/currency_formatter.dart';
+import 'package:moven/core/utils/date_time_utils.dart';
 import 'package:moven/core/utils/responsive_layout.dart';
 import 'package:moven/core/widgets/app_loading.dart';
 import 'package:moven/core/widgets/error_state_view.dart';
@@ -255,7 +255,7 @@ class _OrderDetailViewState extends ConsumerState<_OrderDetailView> {
     Order order,
     bool isMobile,
   ) {
-    final dateStr = DateFormat('dd/MM/yyyy - HH:mm').format(order.createdAt);
+    final dateStr = DateTimeUtils.formatDateTimeWithDash(order.createdAt);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
