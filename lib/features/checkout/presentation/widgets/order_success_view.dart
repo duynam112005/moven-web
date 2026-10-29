@@ -361,30 +361,38 @@ class _OrderSuccessViewState extends ConsumerState<OrderSuccessView> {
                   color: _isPaid ? AppColors.success : null,
                 ),
                 const SizedBox(height: AppDimensions.space8),
-                _buildRow(
-                  'Tổng tiền đơn hàng:',
-                  CurrencyFormatter.format(widget.result.totalAmount),
-                ),
-                if (_isPaid) ...[
+                if (isQr) ...[
+                  _buildRow(
+                    'Tổng tiền đơn hàng:',
+                    CurrencyFormatter.format(widget.result.totalAmount),
+                  ),
                   const SizedBox(height: AppDimensions.space8),
-                  _buildRow(
-                    'Đã thanh toán qua QR:',
-                    '-${CurrencyFormatter.format(widget.result.totalAmount)}',
-                    isBold: true,
-                    color: AppColors.success,
-                  ),
-                  const Divider(height: AppDimensions.space16),
-                  _buildRow(
-                    'Số tiền cần thanh toán khi nhận hàng:',
-                    '0đ (Đã thanh toán đủ)',
-                    isHighlight: true,
-                    isBold: true,
-                    color: AppColors.success,
-                  ),
+                  if (_isPaid) ...[
+                    _buildRow(
+                      'Đã thanh toán qua QR:',
+                      '-${CurrencyFormatter.format(widget.result.totalAmount)}',
+                      isBold: true,
+                      color: AppColors.success,
+                    ),
+                    const Divider(height: AppDimensions.space16),
+                    _buildRow(
+                      'Số tiền cần thanh toán khi nhận hàng:',
+                      '0đ (Đã thanh toán đủ)',
+                      isHighlight: true,
+                      isBold: true,
+                      color: AppColors.success,
+                    ),
+                  ] else ...[
+                    _buildRow(
+                      'Số tiền cần thanh toán:',
+                      CurrencyFormatter.format(widget.result.totalAmount),
+                      isHighlight: true,
+                      isBold: true,
+                    ),
+                  ],
                 ] else ...[
-                  const SizedBox(height: AppDimensions.space8),
                   _buildRow(
-                    'Số tiền cần thanh toán:',
+                    'Tổng thanh toán khi nhận hàng:',
                     CurrencyFormatter.format(widget.result.totalAmount),
                     isHighlight: true,
                     isBold: true,
@@ -429,12 +437,16 @@ class _OrderSuccessViewState extends ConsumerState<OrderSuccessView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+        Flexible(
+          flex: 2,
+          child: Text(
+            label,
+            style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+          ),
         ),
         const SizedBox(width: AppDimensions.space12),
-        Expanded(
+        Flexible(
+          flex: 3,
           child: Text(
             value,
             textAlign: TextAlign.end,
