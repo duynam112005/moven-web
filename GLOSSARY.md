@@ -1,6 +1,6 @@
 # MOVEN Domain Glossary
 
-This glossary defines the authoritative domain terminology for MOVEN, a single-store clothing e-commerce system specializing in Cash on Delivery (COD) fulfillment.
+This glossary defines the authoritative domain terminology for MOVEN, a single-store clothing e-commerce system supporting Cash on Delivery (COD) and QR Code payment fulfillment.
 
 ## Fulfillment & Orders
 
@@ -28,8 +28,20 @@ _Avoid_: Delivery failed, returned to stock, restocked.
 The atomic process of incrementing product variant inventory and logging an `inventory_movements` record upon order cancellation or confirmed return.
 _Avoid_: Stock refund, inventory rollback.
 
-**COD Payment Status**:
-The monetary reconciliation state of Cash on Delivery proceeds (`unpaid`, `paid`), tracked independently from physical fulfillment status.
+**Payment Method**:
+The settlement mechanism selected during checkout (`cod` for Cash on Delivery, `qr_code` for QR payment).
+_Avoid_: Billing type, tender method.
+
+**QR Payment**:
+A payment method where the customer scans a dynamically generated QR code (containing order code, recipient info, and authoritative total amount) via smartphone camera to review order information and facilitate payment, prior to manual or automated reconciliation.
+_Avoid_: Online card payment, wire transfer.
+
+**Payment Expiration**:
+The 15-minute time-to-live (TTL) period allocated for a customer to complete payment for a QR order. If unpaid after 15 minutes, the order is automatically cancelled and reserved inventory is atomically restocked.
+_Avoid_: Checkout timeout, payment cancel.
+
+**Payment Status**:
+The monetary reconciliation state of an order (`unpaid`, `paid`, `failed`), tracked independently from physical fulfillment status.
 _Avoid_: Payment condition, cash state.
 
 **Order Status History**:

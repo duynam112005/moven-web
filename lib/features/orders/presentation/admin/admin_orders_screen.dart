@@ -289,15 +289,46 @@ class _AdminOrdersScreenState extends ConsumerState<AdminOrdersScreen> {
                 border: Border(bottom: BorderSide(color: AppColors.border, width: 0.5)),
               ),
               children: [
-                // 1. Mã đơn
+                // 1. Mã đơn & Phương thức thanh toán
                 Padding(
                   padding: const EdgeInsets.all(AppDimensions.space12),
-                  child: Text(
-                    order.orderCode,
-                    style: AppTypography.bodySmall.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        order.orderCode,
+                        style: AppTypography.bodySmall.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: order.isQrPayment
+                              ? AppColors.primary.withValues(alpha: 0.1)
+                              : AppColors.surfaceVariant,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: order.isQrPayment
+                                ? AppColors.primary.withValues(alpha: 0.3)
+                                : AppColors.border,
+                          ),
+                        ),
+                        child: Text(
+                          order.paymentMethodDisplayName,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: order.isQrPayment
+                                ? AppColors.primary
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
 
@@ -499,9 +530,33 @@ class _AdminOrdersScreenState extends ConsumerState<AdminOrdersScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    order.orderCode,
-                    style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w700),
+                  Row(
+                    children: [
+                      Text(
+                        order.orderCode,
+                        style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: order.isQrPayment
+                              ? AppColors.primary.withValues(alpha: 0.1)
+                              : AppColors.surfaceVariant,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          order.paymentMethodDisplayName,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: order.isQrPayment
+                                ? AppColors.primary
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   OrderStatusBadge(status: order.status),
                 ],

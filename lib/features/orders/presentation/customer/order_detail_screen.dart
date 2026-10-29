@@ -11,6 +11,7 @@ import 'package:moven/core/utils/currency_formatter.dart';
 import 'package:moven/core/utils/responsive_layout.dart';
 import 'package:moven/core/widgets/app_loading.dart';
 import 'package:moven/core/widgets/error_state_view.dart';
+import 'package:moven/features/checkout/presentation/widgets/vietqr_payment_card.dart';
 import 'package:moven/features/orders/domain/models/order.dart';
 import 'package:moven/features/orders/domain/models/order_status.dart';
 import 'package:moven/features/orders/presentation/providers/orders_providers.dart';
@@ -340,7 +341,7 @@ class _OrderDetailView extends ConsumerWidget {
           const SizedBox(height: AppDimensions.space20),
           _buildItemsCard(context, order),
           const SizedBox(height: AppDimensions.space20),
-          _buildPaymentSummaryCard(order),
+          _buildPaymentSummaryCard(context, order),
         ] else ...[
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -358,7 +359,7 @@ class _OrderDetailView extends ConsumerWidget {
               const SizedBox(width: AppDimensions.space24),
               Expanded(
                 flex: 2,
-                child: _buildPaymentSummaryCard(order),
+                child: _buildPaymentSummaryCard(context, order),
               ),
             ],
           ),
@@ -437,7 +438,7 @@ class _OrderDetailView extends ConsumerWidget {
               const Icon(Icons.location_on_outlined, size: 20, color: AppColors.textSecondary),
               const SizedBox(width: AppDimensions.space8),
               Text(
-                'Địa chỉ nhận hàng (COD)',
+                'Địa chỉ nhận hàng',
                 style: AppTypography.titleMedium.copyWith(
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -672,7 +673,7 @@ class _OrderDetailView extends ConsumerWidget {
     );
   }
 
-  Widget _buildPaymentSummaryCard(Order order) {
+  Widget _buildPaymentSummaryCard(BuildContext context, Order order) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppDimensions.space20),
@@ -685,7 +686,7 @@ class _OrderDetailView extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Thanh toán COD',
+            order.isQrPayment ? 'Thanh toán Quét mã QR' : 'Thanh toán COD',
             style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: AppDimensions.space16),
@@ -730,14 +731,16 @@ class _OrderDetailView extends ConsumerWidget {
             child: Row(
               children: [
                 Icon(
-                  order.isPaid ? Icons.check_circle_outline : Icons.payments_outlined,
+                  order.isPaid
+                      ? Icons.check_circle_outline
+                      : (order.isQrPayment ? Icons.qr_code_2 : Icons.payments_outlined),
                   size: 18,
                   color: order.isPaid ? AppColors.success : AppColors.textSecondary,
                 ),
                 const SizedBox(width: AppDimensions.space8),
                 Expanded(
                   child: Text(
-                    'Hình thức: Thanh toán tiền mặt khi nhận hàng (COD)',
+                    'Hình thức: ${order.paymentMethodDisplayName} • ${order.paymentStatusDisplayName}',
                     style: AppTypography.bodySmall.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -746,7 +749,109 @@ class _OrderDetailView extends ConsumerWidget {
               ],
             ),
           ),
+
+          // Nút xem lại mã QR nếu là đơn QR chưa thanh toán
+          if (order.isQrPayment &&
+              !order.isPaid &&
+              order.status == OrderStatus.pendingConfirmation) ...[
+            const SizedBox(height: AppDimensions.space12),
+            if (!order.isPaymentExpired) ...[
+              OutlinedButton.icon(
+                onPressed: () => _showQrCodeDialog(context, order),
+                icon: const Icon(Icons.qr_code_scanner, size: 18),
+                label: const Text('Xem mã QR để quét'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, AppDimensions.buttonHeightMd),
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppDimensions.radius8),
+                  ),
+                ),
+              ),
+            ] else ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppDimensions.space12),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppDimensions.radius8),
+                  border: Border.all(color: AppColors.error),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.timer_off_outlined, color: AppColors.error, size: 16),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Đơn hàng đã hết hạn thời gian thanh toán (15 phút)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
         ],
+      ),
+    );
+  }
+
+  void _showQrCodeDialog(BuildContext context, Order order) {
+    final remaining = order.paymentExpiredAt?.difference(DateTime.now());
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radius16),
+        ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppDimensions.space24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Mã VietQR Thanh Toán', style: AppTypography.titleLarge),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(dialogCtx).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppDimensions.space16),
+                VietQrPaymentCard(
+                  orderCode: order.orderCode,
+                  totalAmount: order.totalAmount,
+                  remainingTime:
+                      remaining != null && !remaining.isNegative ? remaining : null,
+                  isExpired: order.isPaymentExpired,
+                  isPaid: order.isPaid,
+                ),
+                const SizedBox(height: AppDimensions.space16),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(dialogCtx).pop(),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize:
+                        const Size(double.infinity, AppDimensions.buttonHeightMd),
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.onPrimary,
+                  ),
+                  child: const Text('Đóng'),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -31,11 +31,12 @@ class CheckoutController extends StateNotifier<AsyncValue<CheckoutResult?>> {
   CheckoutController(this._repository, [Ref? _])
       : super(const AsyncValue.data(null));
 
-  /// Thực hiện đặt hàng COD với cơ chế bảo vệ duplicate click
+  /// Thực hiện đặt hàng (COD hoặc Quét mã QR) với cơ chế bảo vệ duplicate click
   Future<CheckoutResult?> submitOrder({
     required Map<String, dynamic> shippingAddress,
     required List<Map<String, dynamic>> items,
     String? customerNote,
+    String paymentMethod = 'cod',
   }) async {
     // Tránh duplicate submit nếu đang xử lý
     if (state.isLoading) return null;
@@ -51,6 +52,7 @@ class CheckoutController extends StateNotifier<AsyncValue<CheckoutResult?>> {
         shippingAddress: shippingAddress,
         items: items,
         customerNote: customerNote,
+        paymentMethod: paymentMethod,
       );
 
       state = AsyncValue.data(result);

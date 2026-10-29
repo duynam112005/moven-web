@@ -197,7 +197,9 @@ class AdminOrderDetailDialog extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Thông tin giao nhận & Thanh toán COD',
+                order.isQrPayment
+                    ? 'Thông tin giao nhận & Thanh toán QR'
+                    : 'Thông tin giao nhận & Thanh toán COD',
                 style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w700),
               ),
               Container(
@@ -209,7 +211,13 @@ class AdminOrderDetailDialog extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(AppDimensions.radiusRound),
                 ),
                 child: Text(
-                  order.isPaid ? 'Tiền COD: Đã đối soát nộp' : 'Tiền COD: Chưa thu/chưa nộp',
+                  order.isPaid
+                      ? (order.isQrPayment
+                          ? 'Thanh toán QR: Đã nhận tiền'
+                          : 'Tiền COD: Đã đối soát nộp')
+                      : (order.isQrPayment
+                          ? 'Thanh toán QR: Chưa nhận tiền'
+                          : 'Tiền COD: Chưa thu/chưa nộp'),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -259,7 +267,7 @@ class AdminOrderDetailDialog extends ConsumerWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Tổng thu COD: ${CurrencyFormatter.format(order.totalAmount)}',
+                      '${order.isQrPayment ? "Tổng thanh toán:" : "Tổng thu COD:"} ${CurrencyFormatter.format(order.totalAmount)}',
                       style: AppTypography.bodyMedium.copyWith(
                         fontWeight: FontWeight.w700,
                         color: AppColors.primary,

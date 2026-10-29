@@ -99,7 +99,36 @@ class _OrderCardState extends State<OrderCard> {
                     ),
                   ),
                   const SizedBox(width: AppDimensions.space8),
-                  OrderStatusBadge(status: order.status),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: order.isQrPayment
+                              ? AppColors.primary.withValues(alpha: 0.1)
+                              : AppColors.surfaceVariant,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: order.isQrPayment
+                                ? AppColors.primary.withValues(alpha: 0.3)
+                                : AppColors.border,
+                          ),
+                        ),
+                        child: Text(
+                          order.paymentMethodDisplayName,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: order.isQrPayment
+                                ? AppColors.primary
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppDimensions.space6),
+                      OrderStatusBadge(status: order.status),
+                    ],
+                  ),
                 ],
               ),
 
@@ -191,7 +220,7 @@ class _OrderCardState extends State<OrderCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Tổng tiền COD (${order.totalItemCount} món)',
+                        'Tổng tiền (${order.totalItemCount} món):',
                         style: AppTypography.bodySmall.copyWith(
                           color: AppColors.textSecondary,
                         ),

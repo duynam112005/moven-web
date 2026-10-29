@@ -35,6 +35,9 @@ _$OrderImpl _$$OrderImplFromJson(Map<String, dynamic> json) => _$OrderImpl(
   deliveredAt: json['delivered_at'] == null
       ? null
       : DateTime.parse(json['delivered_at'] as String),
+  paymentExpiredAt: json['payment_expired_at'] == null
+      ? null
+      : DateTime.parse(json['payment_expired_at'] as String),
   items:
       (json['order_items'] as List<dynamic>?)
           ?.map((e) => OrderItem.fromJson(e as Map<String, dynamic>))
@@ -68,6 +71,7 @@ Map<String, dynamic> _$$OrderImplToJson(_$OrderImpl instance) =>
       'updated_at': instance.updatedAt.toIso8601String(),
       'cancelled_at': instance.cancelledAt?.toIso8601String(),
       'delivered_at': instance.deliveredAt?.toIso8601String(),
+      'payment_expired_at': instance.paymentExpiredAt?.toIso8601String(),
       'order_items': instance.items,
       'order_status_history': instance.statusHistory,
     };

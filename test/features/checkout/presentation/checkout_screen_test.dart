@@ -346,6 +346,7 @@ class _MockCheckoutRepository implements CheckoutRepository {
     required Map<String, dynamic> shippingAddress,
     required List<Map<String, dynamic>> items,
     String? customerNote,
+    String paymentMethod = 'cod',
   }) async {
     return const CheckoutResult(
       success: true,
