@@ -99,4 +99,7 @@ class Order with _$Order {
 
   /// Đã thu tiền / thanh toán hay chưa
   bool get isPaid => paymentStatus.toLowerCase() == 'paid';
+
+  /// Số tiền còn lại khách cần thanh toán khi nhận hàng (Chuẩn Shopee: 0đ nếu đã thanh toán)
+  int get remainingAmountToPay => isPaid ? 0 : totalAmount;
 }

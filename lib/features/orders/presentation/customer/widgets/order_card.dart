@@ -104,24 +104,34 @@ class _OrderCardState extends State<OrderCard> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: order.isQrPayment
-                              ? AppColors.primary.withValues(alpha: 0.1)
-                              : AppColors.surfaceVariant,
+                          color: order.isPaid
+                              ? AppColors.success.withValues(alpha: 0.12)
+                              : (order.isQrPayment
+                                  ? AppColors.primary.withValues(alpha: 0.1)
+                                  : AppColors.surfaceVariant),
                           borderRadius: BorderRadius.circular(4),
                           border: Border.all(
-                            color: order.isQrPayment
-                                ? AppColors.primary.withValues(alpha: 0.3)
-                                : AppColors.border,
+                            color: order.isPaid
+                                ? AppColors.success.withValues(alpha: 0.4)
+                                : (order.isQrPayment
+                                    ? AppColors.primary.withValues(alpha: 0.3)
+                                    : AppColors.border),
                           ),
                         ),
                         child: Text(
-                          order.paymentMethodDisplayName,
+                          order.isPaid
+                              ? 'Đã thanh toán (0đ)'
+                              : (order.isQrPayment
+                                  ? 'Chờ thanh toán QR'
+                                  : order.paymentMethodDisplayName),
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: order.isQrPayment
-                                ? AppColors.primary
-                                : AppColors.textSecondary,
+                            color: order.isPaid
+                                ? AppColors.success
+                                : (order.isQrPayment
+                                    ? AppColors.primary
+                                    : AppColors.textSecondary),
                           ),
                         ),
                       ),
@@ -212,7 +222,7 @@ class _OrderCardState extends State<OrderCard> {
               const Divider(color: AppColors.border, height: 1),
               const SizedBox(height: AppDimensions.space12),
 
-              // 3. Footer: Tổng tiền COD + Hành động
+              // 3. Footer: Tổng tiền + Còn lại cần trả + Hành động
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -220,18 +230,43 @@ class _OrderCardState extends State<OrderCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Tổng tiền (${order.totalItemCount} món):',
+                        order.isPaid
+                            ? 'Đã thanh toán (${order.totalItemCount} món):'
+                            : 'Cần thanh toán (${order.totalItemCount} món):',
                         style: AppTypography.bodySmall.copyWith(
                           color: AppColors.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        CurrencyFormatter.format(order.totalAmount),
-                        style: AppTypography.titleMedium.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            CurrencyFormatter.format(order.totalAmount),
+                            style: AppTypography.titleMedium.copyWith(
+                              color: order.isPaid ? AppColors.success : AppColors.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (order.isPaid) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: AppColors.success.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                'Còn lại: 0đ',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.success,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ],
                   ),
@@ -239,10 +274,14 @@ class _OrderCardState extends State<OrderCard> {
                     children: [
                       if (order.status.canCustomerCancel && widget.onCancelPressed != null) ...[
                         OutlinedButton(
-                          onPressed: widget.onCancelPressed,
+                          onPressed: order.isPaid
+                              ? () => _showPaidOrderCancelInfo(context)
+                              : widget.onCancelPressed,
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.error,
-                            side: const BorderSide(color: AppColors.error),
+                            foregroundColor: order.isPaid ? AppColors.textSecondary : AppColors.error,
+                            side: BorderSide(
+                              color: order.isPaid ? AppColors.border : AppColors.error,
+                            ),
                             padding: const EdgeInsets.symmetric(
                               horizontal: AppDimensions.space12,
                               vertical: AppDimensions.space8,
@@ -251,7 +290,10 @@ class _OrderCardState extends State<OrderCard> {
                               borderRadius: BorderRadius.circular(AppDimensions.radius8),
                             ),
                           ),
-                          child: const Text('Hủy đơn', style: TextStyle(fontSize: 13)),
+                          child: Text(
+                            order.isPaid ? 'Yêu cầu hủy' : 'Hủy đơn',
+                            style: const TextStyle(fontSize: 13),
+                          ),
                         ),
                         const SizedBox(width: AppDimensions.space8),
                       ],
@@ -284,6 +326,38 @@ class _OrderCardState extends State<OrderCard> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showPaidOrderCancelInfo(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radius12),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.info_outline, color: AppColors.primary),
+            SizedBox(width: 8),
+            Text('Đơn hàng đã thanh toán', style: AppTypography.titleMedium),
+          ],
+        ),
+        content: const Text(
+          'Đơn hàng này đã được thanh toán thành công (0đ khi nhận hàng). Để hủy đơn và được hoàn tiền vào tài khoản ngân hàng, quý khách vui lòng liên hệ trực tiếp Hotline/Zalo cửa hàng MOVEN.',
+          style: AppTypography.bodyMedium,
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.onPrimary,
+            ),
+            child: const Text('Đã hiểu'),
+          ),
+        ],
       ),
     );
   }

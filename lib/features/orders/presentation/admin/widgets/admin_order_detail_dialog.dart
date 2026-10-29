@@ -137,8 +137,12 @@ class AdminOrderDetailDialog extends ConsumerWidget {
                     ),
                     label: Text(
                       order.isPaid
-                          ? 'Đánh dấu Chưa thu COD'
-                          : 'Xác nhận Đã thu tiền COD',
+                          ? (order.isQrPayment
+                              ? 'Đánh dấu Chưa nhận QR'
+                              : 'Đánh dấu Chưa thu COD')
+                          : (order.isQrPayment
+                              ? 'Xác nhận Đã nhận chuyển khoản QR'
+                              : 'Xác nhận Đã thu tiền COD'),
                       style: TextStyle(
                         color: order.isPaid ? AppColors.warning : AppColors.success,
                       ),

@@ -424,7 +424,9 @@ class _AdminOrdersScreenState extends ConsumerState<AdminOrdersScreen> {
                           Flexible(
                             fit: FlexFit.loose,
                             child: Text(
-                              order.isPaid ? 'Đã nộp' : 'Chưa thu',
+                              order.isPaid
+                                  ? (order.isQrPayment ? 'Đã nhận QR' : 'Đã nộp COD')
+                                  : (order.isQrPayment ? 'Chờ quét QR' : 'Chưa thu'),
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
