@@ -261,33 +261,30 @@ class _OrderDetailViewState extends ConsumerState<_OrderDetailView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Header
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        'Đơn hàng ${order.orderCode}',
-                        style: isMobile
-                            ? AppTypography.headlineMedium
-                            : AppTypography.displayMedium,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppDimensions.space4),
-                  Text(
-                    'Ngày đặt: $dateStr',
-                    style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
-            ),
-            Wrap(
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 650;
+
+            final titleWidget = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Đơn hàng ${order.orderCode}',
+                  style: isMobile || isNarrow
+                      ? AppTypography.headlineMedium
+                      : AppTypography.displayMedium,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: AppDimensions.space4),
+                Text(
+                  'Ngày đặt: $dateStr',
+                  style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+                ),
+              ],
+            );
+
+            final badgesWidget = Wrap(
               spacing: AppDimensions.space8,
               runSpacing: AppDimensions.space8,
               crossAxisAlignment: WrapCrossAlignment.center,
@@ -347,8 +344,29 @@ class _OrderDetailViewState extends ConsumerState<_OrderDetailView> {
                 ),
                 OrderStatusBadge(status: order.status, isLarge: true),
               ],
-            ),
-          ],
+            );
+
+            if (isNarrow) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  titleWidget,
+                  const SizedBox(height: AppDimensions.space12),
+                  badgesWidget,
+                ],
+              );
+            }
+
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: titleWidget),
+                const SizedBox(width: AppDimensions.space16),
+                Flexible(child: badgesWidget),
+              ],
+            );
+          },
         ),
         const SizedBox(height: AppDimensions.space24),
 
@@ -685,7 +703,7 @@ class _OrderDetailViewState extends ConsumerState<_OrderDetailView> {
     Order order,
   ) async {
     if (order.isPaid) {
-      showDialog<void>(
+      await showDialog<void>(
         context: context,
         builder: (dialogCtx) => AlertDialog(
           shape: RoundedRectangleBorder(
