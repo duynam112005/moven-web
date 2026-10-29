@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:moven/features/auth/data/auth_repository.dart';
 import 'package:moven/features/auth/domain/models/user_profile.dart';
+import 'package:moven/features/cart/data/cart_providers.dart';
 import 'package:moven/features/profile/data/address_repository.dart';
 import 'package:moven/features/profile/data/profile_repository.dart';
 import 'package:moven/features/profile/domain/models/address.dart';
@@ -107,6 +108,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     try {
       await ref.read(authRepositoryProvider).signOut();
       ref.invalidate(userProfileProvider);
+      ref.invalidate(cartNotifierProvider);
+      ref.invalidate(selectedCartItemIdsProvider);
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -226,6 +226,8 @@ class StorefrontShell extends ConsumerWidget {
           try {
             await ref.read(authRepositoryProvider).signOut();
             ref.invalidate(userProfileProvider);
+            ref.invalidate(cartNotifierProvider);
+            ref.invalidate(selectedCartItemIdsProvider);
           } catch (_) {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(

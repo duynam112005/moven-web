@@ -8,6 +8,7 @@ import '../../../../core/network/supabase_client.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/utils/responsive_layout.dart';
 import '../../auth/data/auth_repository.dart';
+import '../../cart/data/cart_providers.dart';
 
 /// Khung giao diện Quản trị viên (Admin Dashboard Shell)
 /// Phân tách riêng biệt với Storefront khách hàng: có Sidebar quản trị, Header admin và vùng nội dung.
@@ -215,6 +216,8 @@ class AdminShellScreen extends ConsumerWidget {
                             await ref.read(authRepositoryProvider).signOut();
                           } catch (_) {}
                           ref.invalidate(userProfileProvider);
+                          ref.invalidate(cartNotifierProvider);
+                          ref.invalidate(selectedCartItemIdsProvider);
                         },
                       ),
                     ],

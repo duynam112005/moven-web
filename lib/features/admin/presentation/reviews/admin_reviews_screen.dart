@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:moven/core/constants/app_colors.dart';
 import 'package:moven/core/constants/app_dimensions.dart';
 import 'package:moven/core/constants/app_typography.dart';
+import 'package:moven/core/utils/date_time_utils.dart';
 import 'package:moven/core/widgets/app_loading.dart';
 import 'package:moven/core/widgets/empty_state_view.dart';
 import 'package:moven/features/reviews/domain/models/review.dart';
@@ -227,7 +227,7 @@ class _AdminReviewsScreenState extends ConsumerState<AdminReviewsScreen>
   }
 
   Widget _buildReportCard(ReviewReport report) {
-    final dateStr = DateFormat('dd/MM/yyyy HH:mm').format(report.createdAt);
+    final dateStr = DateTimeUtils.formatDateTime(report.createdAt);
 
     return Container(
       padding: const EdgeInsets.all(AppDimensions.space16),
@@ -727,7 +727,7 @@ class _AdminReviewsScreenState extends ConsumerState<AdminReviewsScreen>
   }
 
   TableRow _buildReviewTableRow(Review review) {
-    final dateStr = DateFormat('dd/MM/yyyy').format(review.createdAt);
+    final dateStr = DateTimeUtils.formatDate(review.createdAt);
 
     return TableRow(
       decoration: const BoxDecoration(

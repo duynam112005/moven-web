@@ -908,8 +908,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(AppDimensions.radius4),
                     child: Container(
-                      width: 52,
-                      height: 52,
+                      width: 54,
+                      height: 72,
                       decoration: BoxDecoration(
                         color: AppColors.surfaceVariant,
                         borderRadius:

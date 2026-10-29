@@ -1,13 +1,17 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:moven/core/config/app_config.dart';
 import 'package:moven/core/constants/app_colors.dart';
 import 'package:moven/core/constants/app_dimensions.dart';
 import 'package:moven/core/constants/app_typography.dart';
 import 'package:moven/core/errors/app_exception.dart';
+import 'package:moven/core/network/supabase_client.dart';
 import 'package:moven/core/router/route_names.dart';
 import 'package:moven/core/utils/currency_formatter.dart';
+import 'package:moven/core/utils/date_time_utils.dart';
 import 'package:moven/core/utils/responsive_layout.dart';
 import 'package:moven/core/widgets/app_loading.dart';
 import 'package:moven/core/widgets/error_state_view.dart';
@@ -35,14 +39,134 @@ class OrderDetailScreen extends ConsumerWidget {
   }
 }
 
-class _OrderDetailView extends ConsumerWidget {
+class _OrderDetailView extends ConsumerStatefulWidget {
   final String orderCode;
 
   const _OrderDetailView({required this.orderCode});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final orderAsync = ref.watch(orderDetailProvider(orderCode));
+  ConsumerState<_OrderDetailView> createState() => _OrderDetailViewState();
+}
+
+class _OrderDetailViewState extends ConsumerState<_OrderDetailView> {
+  Timer? _pollingTimer;
+  RealtimeChannel? _realtimeChannel;
+  bool _isCheckingPayment = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _setupRealtimeAndPolling();
+  }
+
+  void _setupRealtimeAndPolling() {
+    // 1. Supabase Realtime channel
+    if (AppConfig.isSupabaseConfigured) {
+      try {
+        final client = ref.read(supabaseClientProvider);
+        _realtimeChannel = client
+            .channel('public:orders:detail:${widget.orderCode}')
+            .onPostgresChanges(
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: 'orders',
+              filter: PostgresChangeFilter(
+                type: PostgresChangeFilterType.eq,
+                column: 'order_code',
+                value: widget.orderCode,
+              ),
+              callback: (payload) {
+                if (mounted) {
+                  ref.invalidate(orderDetailProvider(widget.orderCode));
+                }
+              },
+            )
+            .subscribe();
+      } catch (_) {}
+    }
+
+    // 2. Polling fallback mỗi 4 giây nếu đơn đang chờ thanh toán QR
+    _pollingTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      final orderVal =
+          ref.read(orderDetailProvider(widget.orderCode)).valueOrNull;
+      if (orderVal != null) {
+        if (orderVal.isPaid ||
+            orderVal.status != OrderStatus.pendingConfirmation) {
+          timer.cancel();
+          return;
+        }
+        if (orderVal.isQrPayment) {
+          ref.invalidate(orderDetailProvider(widget.orderCode));
+        }
+      }
+    });
+  }
+
+  Future<void> _handleManualCheckPayment(Order order) async {
+    if (_isCheckingPayment) return;
+    setState(() => _isCheckingPayment = true);
+
+    try {
+      ref.invalidate(orderDetailProvider(widget.orderCode));
+      final updated =
+          await ref.read(orderDetailProvider(widget.orderCode).future);
+
+      if (!mounted) return;
+
+      if (updated.isPaid) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Xác nhận thanh toán thành công! Số tiền cần thanh toán chuyển về 0đ.',
+            ),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Hệ thống đang đối soát với ngân hàng. Quý khách vui lòng thử lại sau giây lát...',
+            ),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Không thể kiểm tra trạng thái thanh toán: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isCheckingPayment = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    if (_realtimeChannel != null) {
+      try {
+        final client = ref.read(supabaseClientProvider);
+        client.removeChannel(_realtimeChannel!);
+      } catch (_) {}
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final orderAsync = ref.watch(orderDetailProvider(widget.orderCode));
 
     return Material(
       color: AppColors.background,
@@ -114,7 +238,7 @@ class _OrderDetailView extends ConsumerWidget {
                 ),
                 error: (error, _) => ErrorStateView(
                   message: 'Không thể tải thông tin đơn hàng: $error',
-                  onRetry: () => ref.invalidate(orderDetailProvider(orderCode)),
+                  onRetry: () => ref.invalidate(orderDetailProvider(widget.orderCode)),
                 ),
                 data: (order) => _buildOrderDetailContent(context, ref, order, isMobile),
               ),
@@ -131,40 +255,118 @@ class _OrderDetailView extends ConsumerWidget {
     Order order,
     bool isMobile,
   ) {
-    final dateStr = DateFormat('dd/MM/yyyy - HH:mm').format(order.createdAt);
+    final dateStr = DateTimeUtils.formatDateTimeWithDash(order.createdAt);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Header
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 650;
+
+            final titleWidget = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Đơn hàng ${order.orderCode}',
+                  style: isMobile || isNarrow
+                      ? AppTypography.headlineMedium
+                      : AppTypography.displayMedium,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: AppDimensions.space4),
+                Text(
+                  'Ngày đặt: $dateStr',
+                  style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+                ),
+              ],
+            );
+
+            final badgesWidget = Wrap(
+              spacing: AppDimensions.space8,
+              runSpacing: AppDimensions.space8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: order.isPaid
+                        ? AppColors.success.withValues(alpha: 0.12)
+                        : (order.isQrPayment
+                            ? AppColors.primary.withValues(alpha: 0.1)
+                            : AppColors.surfaceVariant),
+                    borderRadius: BorderRadius.circular(AppDimensions.radius6),
+                    border: Border.all(
+                      color: order.isPaid
+                          ? AppColors.success.withValues(alpha: 0.4)
+                          : (order.isQrPayment
+                              ? AppColors.primary.withValues(alpha: 0.3)
+                              : AppColors.border),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
+                      Icon(
+                        order.isPaid
+                            ? Icons.check_circle_rounded
+                            : (order.isQrPayment
+                                ? Icons.qr_code_2_rounded
+                                : Icons.payments_outlined),
+                        size: 15,
+                        color: order.isPaid
+                            ? AppColors.success
+                            : (order.isQrPayment
+                                ? AppColors.primary
+                                : AppColors.textSecondary),
+                      ),
+                      const SizedBox(width: 5),
                       Text(
-                        'Đơn hàng ${order.orderCode}',
-                        style: isMobile
-                            ? AppTypography.headlineMedium
-                            : AppTypography.displayMedium,
+                        order.isPaid
+                            ? 'Đã thanh toán (0đ)'
+                            : (order.isQrPayment
+                                ? 'Chờ quét mã QR'
+                                : 'Thu COD khi nhận'),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: order.isPaid
+                              ? AppColors.success
+                              : (order.isQrPayment
+                                  ? AppColors.primary
+                                  : AppColors.textSecondary),
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppDimensions.space4),
-                  Text(
-                    'Ngày đặt: $dateStr',
-                    style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
-                  ),
+                ),
+                OrderStatusBadge(status: order.status, isLarge: true),
+              ],
+            );
+
+            if (isNarrow) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  titleWidget,
+                  const SizedBox(height: AppDimensions.space12),
+                  badgesWidget,
                 ],
-              ),
-            ),
-            OrderStatusBadge(status: order.status, isLarge: true),
-          ],
+              );
+            }
+
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: titleWidget),
+                const SizedBox(width: AppDimensions.space16),
+                Flexible(child: badgesWidget),
+              ],
+            );
+          },
         ),
         const SizedBox(height: AppDimensions.space24),
 
@@ -212,7 +414,9 @@ class _OrderDetailView extends ConsumerWidget {
                       ),
                       const SizedBox(height: AppDimensions.space4),
                       Text(
-                        'Nhân viên giao vận sẽ liên hệ với bạn qua số điện thoại ${order.recipientPhone} trước khi phát hàng. Quý khách vui lòng kiểm tra kiện hàng và thanh toán số tiền COD ${CurrencyFormatter.format(order.totalAmount)} khi nhận.',
+                        order.isPaid
+                            ? 'Kiện hàng đang trên đường giao tới bạn. Đơn hàng đã được thanh toán trực tuyến qua VietQR (Số tiền cần thu khi nhận: 0đ). Quý khách chỉ cần kiểm tra kiện hàng và ký nhận với nhân viên phát hàng.'
+                            : 'Nhân viên giao vận sẽ liên hệ với bạn qua số điện thoại ${order.recipientPhone} trước khi phát hàng. Quý khách vui lòng kiểm tra kiện hàng và thanh toán số tiền COD ${CurrencyFormatter.format(order.totalAmount)} khi nhận.',
                         style: AppTypography.bodyMedium.copyWith(
                           color: AppColors.textPrimary,
                           height: 1.4,
@@ -389,7 +593,9 @@ class _OrderDetailView extends ConsumerWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Đơn hàng đang chờ xác nhận, bạn có thể tự hủy đơn trực tuyến.',
+                        order.isPaid
+                            ? 'Đơn hàng đã thanh toán thành công (0đ khi nhận). Quý khách vui lòng liên hệ Hotline/Zalo cửa hàng để được hỗ trợ đối soát và hoàn tiền.'
+                            : 'Đơn hàng đang chờ xác nhận, bạn có thể tự hủy đơn trực tuyến.',
                         style: AppTypography.bodySmall.copyWith(
                           color: AppColors.textSecondary,
                         ),
@@ -401,8 +607,8 @@ class _OrderDetailView extends ConsumerWidget {
                   key: const ValueKey('customer_cancel_order_button'),
                   onPressed: () => _handleCustomerCancelOrder(context, ref, order),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.error,
-                    side: const BorderSide(color: AppColors.error),
+                    foregroundColor: order.isPaid ? AppColors.textSecondary : AppColors.error,
+                    side: BorderSide(color: order.isPaid ? AppColors.border : AppColors.error),
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppDimensions.space20,
                       vertical: AppDimensions.space12,
@@ -411,7 +617,7 @@ class _OrderDetailView extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(AppDimensions.radius8),
                     ),
                   ),
-                  child: const Text('Hủy đơn hàng'),
+                  child: Text(order.isPaid ? 'Yêu cầu hủy đơn' : 'Hủy đơn hàng'),
                 ),
               ],
             ),
@@ -496,6 +702,39 @@ class _OrderDetailView extends ConsumerWidget {
     WidgetRef ref,
     Order order,
   ) async {
+    if (order.isPaid) {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogCtx) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDimensions.radius12),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.info_outline, color: AppColors.primary),
+              SizedBox(width: 8),
+              Text('Đơn hàng đã thanh toán', style: AppTypography.titleMedium),
+            ],
+          ),
+          content: const Text(
+            'Đơn hàng này đã được thanh toán thành công qua VietQR (0đ khi nhận hàng). Để đảm bảo đối soát chính xác và hoàn tiền vào tài khoản ngân hàng của bạn, quý khách vui lòng liên hệ trực tiếp Hotline (0325 599 936) hoặc Zalo cửa hàng MOVEN.',
+            style: AppTypography.bodyMedium,
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.onPrimary,
+              ),
+              child: const Text('Đã hiểu'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     final reason = await CancelOrderDialog.show(context, order.orderCode);
     if (reason == null || !context.mounted) return;
 
@@ -696,29 +935,81 @@ class _OrderDetailView extends ConsumerWidget {
             'Phí giao hàng toàn quốc',
             CurrencyFormatter.format(order.shippingFee),
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: AppDimensions.space12),
-            child: Divider(color: AppColors.border, height: 1),
+          const SizedBox(height: AppDimensions.space8),
+          _buildSummaryRow(
+            'Tổng giá trị đơn hàng',
+            CurrencyFormatter.format(order.totalAmount),
+            isBold: true,
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  'Tổng thanh toán',
-                  style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w700),
+          if (order.isPaid) ...[
+            const SizedBox(height: AppDimensions.space8),
+            _buildSummaryRow(
+              order.isQrPayment ? 'Đã thanh toán (Qua VietQR)' : 'Đã thu tiền COD',
+              '-${CurrencyFormatter.format(order.totalAmount)}',
+              valueColor: AppColors.success,
+              isBold: true,
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: AppDimensions.space12),
+              child: Divider(color: AppColors.border, height: 1),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Số tiền cần thanh toán khi nhận hàng',
+                        style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Đã thanh toán đủ toàn bộ đơn hàng',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.success,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: AppDimensions.space8),
-              Text(
-                CurrencyFormatter.format(order.totalAmount),
-                style: AppTypography.headlineMedium.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w700,
+                const SizedBox(width: AppDimensions.space8),
+                Text(
+                  '0đ',
+                  style: AppTypography.headlineMedium.copyWith(
+                    color: AppColors.success,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ] else ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: AppDimensions.space12),
+              child: Divider(color: AppColors.border, height: 1),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    'Số tiền cần thanh toán khi nhận hàng',
+                    style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                const SizedBox(width: AppDimensions.space8),
+                Text(
+                  CurrencyFormatter.format(order.totalAmount),
+                  style: AppTypography.headlineMedium.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: AppDimensions.space16),
           Container(
             padding: const EdgeInsets.all(AppDimensions.space12),
@@ -740,9 +1031,12 @@ class _OrderDetailView extends ConsumerWidget {
                 const SizedBox(width: AppDimensions.space8),
                 Expanded(
                   child: Text(
-                    'Hình thức: ${order.paymentMethodDisplayName} • ${order.paymentStatusDisplayName}',
+                    order.isPaid
+                        ? 'Hình thức: ${order.paymentMethodDisplayName} • ${order.paymentStatusDisplayName} (0đ khi nhận)'
+                        : 'Hình thức: ${order.paymentMethodDisplayName} • ${order.paymentStatusDisplayName}',
                     style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
+                      color: order.isPaid ? AppColors.success : AppColors.textSecondary,
+                      fontWeight: order.isPaid ? FontWeight.w600 : FontWeight.normal,
                     ),
                   ),
                 ),
@@ -750,7 +1044,7 @@ class _OrderDetailView extends ConsumerWidget {
             ),
           ),
 
-          // Nút xem lại mã QR nếu là đơn QR chưa thanh toán
+          // Nút xem lại mã QR và kiểm tra thanh toán nếu là đơn QR chưa thanh toán
           if (order.isQrPayment &&
               !order.isPaid &&
               order.status == OrderStatus.pendingConfirmation) ...[
@@ -760,6 +1054,30 @@ class _OrderDetailView extends ConsumerWidget {
                 onPressed: () => _showQrCodeDialog(context, order),
                 icon: const Icon(Icons.qr_code_scanner, size: 18),
                 label: const Text('Xem mã QR để quét'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, AppDimensions.buttonHeightMd),
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppDimensions.radius8),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppDimensions.space8),
+              OutlinedButton.icon(
+                onPressed: _isCheckingPayment ? null : () => _handleManualCheckPayment(order),
+                icon: _isCheckingPayment
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh_rounded, size: 18),
+                label: Text(
+                  _isCheckingPayment
+                      ? 'Đang kiểm tra giao dịch...'
+                      : 'Tôi đã chuyển khoản (Kiểm tra ngay)',
+                ),
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(double.infinity, AppDimensions.buttonHeightMd),
                   foregroundColor: AppColors.primary,
@@ -856,22 +1174,30 @@ class _OrderDetailView extends ConsumerWidget {
     );
   }
 
-  Widget _buildSummaryRow(String label, String value) {
+  Widget _buildSummaryRow(
+    String label,
+    String value, {
+    Color? valueColor,
+    bool isBold = false,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Expanded(
           child: Text(
             label,
-            style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+            style: AppTypography.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
+            ),
           ),
         ),
         const SizedBox(width: AppDimensions.space8),
         Text(
           value,
           style: AppTypography.bodyMedium.copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
+            color: valueColor ?? AppColors.textPrimary,
           ),
         ),
       ],

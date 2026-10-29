@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:moven/core/constants/app_colors.dart';
 import 'package:moven/core/constants/app_dimensions.dart';
 import 'package:moven/core/constants/app_typography.dart';
 import 'package:moven/core/router/route_names.dart';
 import 'package:moven/core/utils/currency_formatter.dart';
+import 'package:moven/core/utils/date_time_utils.dart';
 import 'package:moven/core/widgets/app_loading.dart';
 import 'package:moven/core/widgets/error_state_view.dart';
 import 'package:moven/features/admin/domain/models/dashboard_metrics.dart';
@@ -745,7 +745,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                       ],
                     ),
                     ...metrics.recentOrders.map((ord) {
-                      final dateStr = DateFormat('dd/MM HH:mm').format(ord.createdAt);
+                      final dateStr = DateTimeUtils.formatShortDateTime(ord.createdAt);
                       return TableRow(
                         decoration: const BoxDecoration(
                           border: Border(bottom: BorderSide(color: AppColors.border, width: 0.5)),

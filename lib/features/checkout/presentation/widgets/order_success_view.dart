@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/config/app_config.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_typography.dart';
+import '../../../../core/network/supabase_client.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/widgets/app_button.dart';
@@ -37,14 +40,16 @@ class OrderSuccessView extends ConsumerStatefulWidget {
 class _OrderSuccessViewState extends ConsumerState<OrderSuccessView> {
   Timer? _countdownTimer;
   Timer? _statusPollingTimer;
+  RealtimeChannel? _realtimeChannel;
   Duration _remainingTime = const Duration(minutes: 15);
   bool _isPaid = false;
+  bool _isChecking = false;
 
   @override
   void initState() {
     super.initState();
     _initCountdown();
-    _startStatusPolling();
+    _initRealtimeAndPolling();
   }
 
   void _initCountdown() {
@@ -70,37 +75,128 @@ class _OrderSuccessViewState extends ConsumerState<OrderSuccessView> {
     });
   }
 
-  /// Lắng nghe tự động trạng thái thanh toán từ SePay webhook
-  void _startStatusPolling() {
+  /// Lắng nghe tự động trạng thái thanh toán từ SePay webhook (Realtime + Polling fallback)
+  void _initRealtimeAndPolling() {
     if (widget.result.paymentMethod != 'qr_code') return;
 
+    // 1. Supabase Realtime channel
+    if (AppConfig.isSupabaseConfigured) {
+      try {
+        final client = ref.read(supabaseClientProvider);
+        _realtimeChannel = client
+            .channel('public:orders:code=${widget.result.orderCode}')
+            .onPostgresChanges(
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: 'orders',
+              filter: PostgresChangeFilter(
+                type: PostgresChangeFilterType.eq,
+                column: 'order_code',
+                value: widget.result.orderCode,
+              ),
+              callback: (payload) {
+                final newRecord = payload.newRecord;
+                if (newRecord['payment_status'] == 'paid' && mounted) {
+                  setState(() => _isPaid = true);
+                  _countdownTimer?.cancel();
+                  _statusPollingTimer?.cancel();
+                }
+              },
+            )
+            .subscribe();
+      } catch (_) {
+        // Dự phòng bằng polling bên dưới
+      }
+    }
+
+    // 2. Polling fallback 3 giây một lần
     _statusPollingTimer =
         Timer.periodic(const Duration(seconds: 3), (timer) async {
       if (!mounted || _isPaid) {
         timer.cancel();
         return;
       }
-      try {
-        final order = await ref
-            .read(ordersRepositoryProvider)
-            .getOrderByCode(widget.result.orderCode);
-        if (order.paymentStatus == 'paid' && mounted) {
-          setState(() {
-            _isPaid = true;
-          });
-          _countdownTimer?.cancel();
-          timer.cancel();
-        }
-      } catch (_) {
-        // Bỏ qua lỗi polling khi đang ở chế độ mock hoặc mạng chập chờn
-      }
+      await _checkStatusSilently();
     });
+  }
+
+  Future<void> _checkStatusSilently() async {
+    try {
+      final order = await ref
+          .read(ordersRepositoryProvider)
+          .getOrderByCode(widget.result.orderCode);
+      if (order.paymentStatus == 'paid' && mounted) {
+        setState(() {
+          _isPaid = true;
+        });
+        _countdownTimer?.cancel();
+        _statusPollingTimer?.cancel();
+      }
+    } catch (_) {
+      // Bỏ qua lỗi polling khi đang ở chế độ mock hoặc mạng chập chờn
+    }
+  }
+
+  /// Khách hàng chủ động bấm kiểm tra đối soát thanh toán
+  Future<void> _handleManualCheck() async {
+    if (_isChecking || _isPaid) return;
+    setState(() => _isChecking = true);
+
+    try {
+      final order = await ref
+          .read(ordersRepositoryProvider)
+          .getOrderByCode(widget.result.orderCode);
+
+      if (!mounted) return;
+
+      if (order.paymentStatus == 'paid') {
+        setState(() {
+          _isPaid = true;
+        });
+        _countdownTimer?.cancel();
+        _statusPollingTimer?.cancel();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Xác nhận thanh toán thành công!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Hệ thống đang đối soát với ngân hàng. Quý khách vui lòng đợi 5-10 giây...',
+            ),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Không thể kiểm tra giao dịch: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isChecking = false);
+      }
+    }
   }
 
   @override
   void dispose() {
     _countdownTimer?.cancel();
     _statusPollingTimer?.cancel();
+    if (_realtimeChannel != null) {
+      try {
+        final client = ref.read(supabaseClientProvider);
+        client.removeChannel(_realtimeChannel!);
+      } catch (_) {}
+    }
     super.dispose();
   }
 
@@ -202,6 +298,33 @@ class _OrderSuccessViewState extends ConsumerState<OrderSuccessView> {
               isExpired: isExpired,
               isPaid: _isPaid,
             ),
+            if (!_isPaid && !isExpired) ...[
+              const SizedBox(height: AppDimensions.space12),
+              OutlinedButton.icon(
+                onPressed: _isChecking ? null : _handleManualCheck,
+                icon: _isChecking
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh_rounded, size: 18),
+                label: Text(
+                  _isChecking
+                      ? 'Đang đối soát giao dịch...'
+                      : 'Tôi đã chuyển khoản (Kiểm tra ngay)',
+                ),
+                style: OutlinedButton.styleFrom(
+                  minimumSize:
+                      const Size(double.infinity, AppDimensions.buttonHeightMd),
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppDimensions.radius8),
+                  ),
+                ),
+              ),
+            ],
           ],
 
           const SizedBox(height: AppDimensions.space20),
@@ -235,13 +358,46 @@ class _OrderSuccessViewState extends ConsumerState<OrderSuccessView> {
                       : (isQr ? 'Chờ thanh toán (Unpaid)' : 'Chờ xác nhận'),
                   isHighlight: _isPaid,
                   isBold: true,
+                  color: _isPaid ? AppColors.success : null,
                 ),
                 const SizedBox(height: AppDimensions.space8),
-                _buildRow(
-                  'Tổng thanh toán:',
-                  CurrencyFormatter.format(widget.result.totalAmount),
-                  isHighlight: true,
-                ),
+                if (isQr) ...[
+                  _buildRow(
+                    'Tổng tiền đơn hàng:',
+                    CurrencyFormatter.format(widget.result.totalAmount),
+                  ),
+                  const SizedBox(height: AppDimensions.space8),
+                  if (_isPaid) ...[
+                    _buildRow(
+                      'Đã thanh toán qua QR:',
+                      '-${CurrencyFormatter.format(widget.result.totalAmount)}',
+                      isBold: true,
+                      color: AppColors.success,
+                    ),
+                    const Divider(height: AppDimensions.space16),
+                    _buildRow(
+                      'Số tiền cần thanh toán khi nhận hàng:',
+                      '0đ (Đã thanh toán đủ)',
+                      isHighlight: true,
+                      isBold: true,
+                      color: AppColors.success,
+                    ),
+                  ] else ...[
+                    _buildRow(
+                      'Số tiền cần thanh toán:',
+                      CurrencyFormatter.format(widget.result.totalAmount),
+                      isHighlight: true,
+                      isBold: true,
+                    ),
+                  ],
+                ] else ...[
+                  _buildRow(
+                    'Tổng thanh toán khi nhận hàng:',
+                    CurrencyFormatter.format(widget.result.totalAmount),
+                    isHighlight: true,
+                    isBold: true,
+                  ),
+                ],
               ],
             ),
           ),
@@ -270,18 +426,27 @@ class _OrderSuccessViewState extends ConsumerState<OrderSuccessView> {
     );
   }
 
-  Widget _buildRow(String label, String value,
-      {bool isBold = false, bool isHighlight = false}) {
+  Widget _buildRow(
+    String label,
+    String value, {
+    bool isBold = false,
+    bool isHighlight = false,
+    Color? color,
+  }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+        Flexible(
+          flex: 2,
+          child: Text(
+            label,
+            style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+          ),
         ),
         const SizedBox(width: AppDimensions.space12),
-        Expanded(
+        Flexible(
+          flex: 3,
           child: Text(
             value,
             textAlign: TextAlign.end,
@@ -289,7 +454,8 @@ class _OrderSuccessViewState extends ConsumerState<OrderSuccessView> {
               fontSize: 13,
               fontWeight:
                   (isBold || isHighlight) ? FontWeight.bold : FontWeight.normal,
-              color: isHighlight ? AppColors.primary : AppColors.textPrimary,
+              color: color ??
+                  (isHighlight ? AppColors.primary : AppColors.textPrimary),
             ),
           ),
         ),

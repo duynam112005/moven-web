@@ -235,7 +235,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                           crossAxisCount: crossAxisCount,
                           crossAxisSpacing: AppDimensions.space16,
                           mainAxisSpacing: AppDimensions.space20,
-                          childAspectRatio: 0.65,
+                          childAspectRatio: isDesktop ? 0.60 : 0.58,
                         ),
                         itemCount: products.length,
                         itemBuilder: (context, index) {

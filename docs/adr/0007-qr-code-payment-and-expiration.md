@@ -32,11 +32,24 @@ However, introducing QR payments introduces critical operational edge cases:
    - **Post-expiration money handling**: If money arrives after an order was cancelled, appends an audit note in `order_status_history` flagging for manual refund rather than corrupting state.
    - On successful payment: transitions order to `payment_status = 'paid'` and `status = 'confirmed'`, appending an audit trail entry.
 
-5. **Client-side Realtime Awareness**:
-   - `OrderSuccessView` polls order status while active; upon receiving payment confirmation from SePay, UI transitions seamlessly from QR timer to a verified success confirmation view.
+5. **Client-side Realtime Awareness & Shopee-style 0đ Presentation**:
+   - Both `OrderSuccessView` and `OrderDetailScreen` subscribe to Supabase Realtime channel and maintain polling fallbacks to detect payment confirmation without page reloads.
+   - UI provides a manual "Tôi đã chuyển khoản (Kiểm tra ngay)" button for instant status reconciliation.
+   - **Shopee-style 0đ Display**: Upon transitioning to `payment_status = 'paid'`:
+     - Displays `Số tiền cần thanh toán khi nhận hàng: 0đ` (prominent green status).
+     - Explicit line item: `Đã thanh toán (Qua VietQR): -[totalAmount]`.
+     - Shipping banner clarifies: 0đ is collected on delivery; customer simply inspects and signs.
+     - `OrderCard` displays `Đã thanh toán (0đ khi nhận)`.
+
+6. **Cancellation Security & Reconciliation Invariant**:
+   - **Unpaid QR Orders**: Customer can cancel directly during `pending_confirmation`, immediately restocking inventory.
+   - **Paid QR Orders (`payment_status = 'paid'`)**: Customer **cannot** self-cancel directly. This prevents inventory release while funds remain in the store bank account without an automated refund gateway.
+   - The UI guides the customer to contact store Hotline/Zalo for manual bank transfer refund; RPC `customer_cancel_order` enforces this invariant at the database level (`P0004`).
 
 ## Consequences
 - **Positive**: Zero manual friction; customers transfer money and order automatically moves to fulfillment.
+- **Positive**: Clear Shopee-aligned presentation: customers explicitly see `0đ` due on delivery once paid.
+- **Positive**: Financial safety: paid orders cannot be abandoned or cancelled without manual staff audit and refund.
 - **Positive**: Zero risk of stock lockout due to strict 15-minute TTL and atomic restock.
 - **Positive**: Full idempotency and auditability; every webhook call and status transition is recorded in `order_status_history`.
 - **Positive**: Zero breaking changes to existing COD orders.

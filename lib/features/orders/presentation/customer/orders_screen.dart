@@ -129,6 +129,18 @@ class OrdersScreen extends ConsumerWidget {
     WidgetRef ref,
     Order order,
   ) async {
+    if (order.isPaid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Đơn hàng đã thanh toán không thể tự hủy. Vui lòng liên hệ Hotline/Zalo cửa hàng để được hỗ trợ hoàn tiền.',
+          ),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+      return;
+    }
+
     final reason = await CancelOrderDialog.show(context, order.orderCode);
     if (reason == null || !context.mounted) return;
 

@@ -62,7 +62,8 @@ Chuyển trạng thái:
 - Phạm vi hoàn hàng: xử lý **toàn đơn**, MVP không hỗ trợ hoàn từng phần.
 
 ## 6.6 Hủy đơn và hoàn kho
-- Khi khách hủy đơn ở `pending_confirmation`, server xác minh quyền sở hữu và trạng thái.
+- Khi khách hủy đơn ở `pending_confirmation` (chỉ áp dụng với đơn chưa thanh toán `payment_status = 'unpaid'`), server xác minh quyền sở hữu và trạng thái.
+- **Quy tắc an toàn tài chính đơn đã thanh toán**: Nếu đơn đã thanh toán thành công (`payment_status = 'paid'`), khách **không được tự hủy trực tiếp** trên ứng dụng (tránh rủi ro hoàn kho khi tiền chuyển khoản ngân hàng chưa được đối soát hoàn trả). Khách liên hệ Hotline/Zalo cửa hàng để admin xử lý thủ công. RPC `customer_cancel_order` chặn thao tác này và báo lỗi.
 - Khi admin hủy đơn ở `confirmed` hoặc `preparing`, server xác minh role admin và trạng thái hàng chưa giao.
 - Khi đơn hàng Quét mã QR quá hạn 15 phút mà `payment_status = 'unpaid'`, RPC `cancel_expired_qr_orders()` tự động chuyển trạng thái sang `cancelled`, lý do `"Hết hạn thời gian thanh toán mã QR (15 phút)"`.
 - Trong transaction hủy đơn: đổi trạng thái sang `cancelled`, hoàn kho toàn bộ biến thể với movement reason `order_cancelled`, và ghi log vào `order_status_history`.
@@ -73,9 +74,11 @@ Chuyển trạng thái:
 ## 6.7 COD, Quét mã QR và thanh toán
 - Khi tạo đơn COD, `payment_status = 'unpaid'`.
 - Khi tạo đơn Quét mã QR, `payment_status = 'unpaid'`, hạn thanh toán 15 phút.
-- Đối soát thanh toán:
+- Đối soát và hiển thị thanh toán chuẩn Shopee:
   - Khi đơn COD chuyển sang `delivered`: hệ thống tự động cập nhật `payment_status = 'paid'` (Phương án B).
   - Khi đơn QR được xác nhận đã nhận tiền (`payment_status = 'paid'`): hệ thống tự động chuyển trạng thái đơn sang `confirmed` (ADR-0007).
+  - Khi đơn đã thanh toán (`payment_status = 'paid'`): Giao diện hiển thị rõ ràng **"Số tiền cần thanh toán khi nhận hàng: 0đ"** (hoặc Đã thanh toán qua VietQR), kèm badge `Đã thanh toán (0đ)`. Shipper giao hàng không thu thêm bất kỳ khoản tiền nào.
+  - Khách hàng có nút "Tôi đã chuyển khoản (Kiểm tra ngay)" và hệ thống hỗ trợ Realtime / Polling để đồng bộ trạng thái thanh toán tức thì mà không cần tải lại trang.
 - Dashboard doanh thu tính tổng giá trị của các đơn có trạng thái `delivered` trong khoảng thời gian được chọn.
 - UI ghi rõ đây là "Doanh thu đơn giao thành công".
 

@@ -4,6 +4,7 @@
 // Uses dart:html for file picking on Flutter Web — no extra package needed.
 
 import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,11 +37,11 @@ class ImageUploadGrid extends ConsumerStatefulWidget {
   final OnImagesChanged onImagesChanged;
 
   const ImageUploadGrid({
-    Key? key,
+    super.key,
     required this.images,
     required this.productId,
     required this.onImagesChanged,
-  }) : super(key: key);
+  });
 
   @override
   ConsumerState<ImageUploadGrid> createState() => _ImageUploadGridState();
@@ -50,20 +51,45 @@ class _ImageUploadGridState extends ConsumerState<ImageUploadGrid> {
   final List<_PendingUpload> _pending = [];
   bool _uploading = false;
 
-  void _pickFiles() {
-    if (!kIsWeb) {
-      // Non-web: show a placeholder message.
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Chức năng upload chỉ hỗ trợ trên Web')),
+  Future<void> _pickFiles() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: [
+          'jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'jfif', 'pjpeg', 'svg', 'heic', 'avif'
+        ],
+        allowMultiple: true,
+        withData: true,
       );
-      return;
+      if (result != null && result.files.isNotEmpty) {
+        final List<_PendingUpload> newlyPicked = [];
+        for (final file in result.files) {
+          final bytes = file.bytes;
+          if (bytes != null && bytes.isNotEmpty) {
+            newlyPicked.add(_PendingUpload(bytes, file.name));
+          }
+        }
+        if (newlyPicked.isNotEmpty) {
+          setState(() => _pending.addAll(newlyPicked));
+          await _commitUploads();
+        }
+        return;
+      }
+    } catch (_) {
+      // Fallback web nếu file_picker có vấn đề trên browser cũ
+      _pickFilesFallbackWeb();
     }
+  }
+
+  void _pickFilesFallbackWeb() {
+    if (!kIsWeb) return;
     final input = html.FileUploadInputElement()
       ..accept = 'image/*'
       ..multiple = true;
     input.click();
     input.onChange.listen((_) async {
       final files = input.files ?? [];
+      final List<_PendingUpload> newlyPicked = [];
       for (final file in files) {
         final reader = html.FileReader();
         reader.readAsArrayBuffer(file);
@@ -79,7 +105,12 @@ class _ImageUploadGridState extends ConsumerState<ImageUploadGrid> {
         } else {
           continue;
         }
-        setState(() => _pending.add(_PendingUpload(bytes, file.name)));
+        newlyPicked.add(_PendingUpload(bytes, file.name));
+      }
+      if (newlyPicked.isNotEmpty) {
+        setState(() => _pending.addAll(newlyPicked));
+        // Tự động tải lên ngay khi người dùng chọn ảnh
+        await _commitUploads();
       }
     });
   }
@@ -170,16 +201,92 @@ class _ImageUploadGridState extends ConsumerState<ImageUploadGrid> {
     }
   }
 
+  void _setPrimary(ProductImage target) {
+    final updated = widget.images.map((img) {
+      return img.copyWith(isPrimary: img.id == target.id);
+    }).toList();
+    widget.onImagesChanged(updated);
+  }
+
+  Future<void> _showAddUrlDialog() async {
+    final controller = TextEditingController();
+    final url = await showDialog<String>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Thêm ảnh từ URL'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Nhập đường dẫn trực tiếp của hình ảnh (hỗ trợ Unsplash, CDN hoặc website bất kỳ):',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                hintText: 'https://images.unsplash.com/...',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              autofocus: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final text = controller.text.trim();
+              if (text.isNotEmpty) {
+                Navigator.pop(dialogCtx, text);
+              }
+            },
+            child: const Text('Thêm ảnh'),
+          ),
+        ],
+      ),
+    );
+
+    if (url != null && url.isNotEmpty) {
+      final now = DateTime.now();
+      final newImg = ProductImage(
+        id: 'temp_${now.millisecondsSinceEpoch}_${widget.images.length}',
+        productId: widget.productId,
+        imagePath: url,
+        sortOrder: widget.images.length,
+        isPrimary: widget.images.isEmpty,
+        createdAt: now,
+      );
+      widget.onImagesChanged([...widget.images, newImg]);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final storageRepo = ref.read(storageRepositoryProvider);
     final allImages = widget.images;
-    const cellSize = 120.0;
+    const cellWidth = 120.0;
+    const cellHeight = 160.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Ảnh sản phẩm', style: Theme.of(context).textTheme.titleSmall),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Ảnh sản phẩm', style: Theme.of(context).textTheme.titleSmall),
+            TextButton.icon(
+              onPressed: _showAddUrlDialog,
+              icon: const Icon(Icons.link, size: 18),
+              label: const Text('Thêm bằng link ảnh (URL)', style: TextStyle(fontSize: 12)),
+            ),
+          ],
+        ),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -192,6 +299,7 @@ class _ImageUploadGridState extends ConsumerState<ImageUploadGrid> {
                 imageUrl: storageRepo.getProductImageUrl(img.imagePath),
                 isPrimary: img.isPrimary,
                 onDelete: () => _deleteImage(img),
+                onSetPrimary: () => _setPrimary(img),
               ),
             // Pending (not uploaded yet) — shown as byte previews
             for (final p in _pending)
@@ -203,8 +311,8 @@ class _ImageUploadGridState extends ConsumerState<ImageUploadGrid> {
             GestureDetector(
               onTap: _pickFiles,
               child: Container(
-                width: cellSize,
-                height: cellSize,
+                width: cellWidth,
+                height: cellHeight,
                 decoration: BoxDecoration(
                   border: Border.all(
                     color: Theme.of(context).colorScheme.primary,
@@ -242,53 +350,89 @@ class _ImageCell extends StatelessWidget {
   final String imageUrl;
   final bool isPrimary;
   final VoidCallback onDelete;
+  final VoidCallback? onSetPrimary;
   const _ImageCell({
-    Key? key,
+    super.key,
     required this.imageUrl,
     required this.isPrimary,
     required this.onDelete,
-  }) : super(key: key);
+    this.onSetPrimary,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Container(
-          width: 120,
-          height: 120,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: isPrimary
-                ? Border.all(
-                    color: Theme.of(context).colorScheme.primary, width: 2)
-                : null,
-            color: Colors.grey.shade200,
+        InkWell(
+          onTap: isPrimary ? null : onSetPrimary,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            width: 120,
+            height: 160,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: isPrimary
+                  ? Border.all(
+                      color: Theme.of(context).colorScheme.primary, width: 2)
+                  : Border.all(color: Colors.grey.shade300, width: 1),
+              color: Colors.grey.shade200,
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: imageUrl.isNotEmpty
+                ? Image.network(
+                    imageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.broken_image_outlined,
+                      color: Colors.grey,
+                    ),
+                  )
+                : const Icon(Icons.broken_image_outlined, color: Colors.grey),
           ),
-          clipBehavior: Clip.antiAlias,
-          child: imageUrl.isNotEmpty
-              ? Image.network(
-                  imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => const Icon(
-                    Icons.broken_image_outlined,
-                    color: Colors.grey,
-                  ),
-                )
-              : const Icon(Icons.broken_image_outlined, color: Colors.grey),
         ),
         if (isPrimary)
           Positioned(
             top: 4,
             left: 4,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.primary,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: const Text(
-                'Chính',
-                style: TextStyle(color: Colors.white, fontSize: 10),
+                'Ảnh chính',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          )
+        else if (onSetPrimary != null)
+          Positioned(
+            bottom: 4,
+            left: 4,
+            right: 4,
+            child: InkWell(
+              onTap: onSetPrimary,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.65),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Center(
+                  child: Text(
+                    'Đặt làm ảnh chính',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -323,7 +467,7 @@ class _PendingImageCell extends StatelessWidget {
       children: [
         Container(
           width: 120,
-          height: 120,
+          height: 160,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.orange, width: 1.5),

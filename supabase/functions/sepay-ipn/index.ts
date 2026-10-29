@@ -37,9 +37,9 @@ serve(async (req: Request) => {
         payload.order?.order_id ||
         payload.order?.orderInvoiceNumber ||
         "";
-      const match = desc.match(/MVN-[A-Za-z0-9]+/i);
+      const match = desc.match(/MVN[-_\s]?([A-Za-z0-9]{6,12})/i);
       if (match) {
-        orderCode = match[0].toUpperCase();
+        orderCode = `MVN-${match[1].toUpperCase()}`;
       }
       amount = Number(payload.transaction?.amount || payload.order?.order_amount || 0);
       refCode = payload.transaction?.id || payload.order?.id || "";
@@ -52,9 +52,9 @@ serve(async (req: Request) => {
       payload.content
     ) {
       const content = payload.content || "";
-      const match = content.match(/MVN-[A-Za-z0-9]+/i);
+      const match = content.match(/MVN[-_\s]?([A-Za-z0-9]{6,12})/i);
       if (match) {
-        orderCode = match[0].toUpperCase();
+        orderCode = `MVN-${match[1].toUpperCase()}`;
       }
       amount = Number(payload.transferAmount || payload.amount || 0);
       refCode = payload.referenceCode || payload.id?.toString() || "";

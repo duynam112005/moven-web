@@ -393,6 +393,11 @@ class OrdersRepository {
       );
       if (idx != -1) {
         final current = _mockOrders[idx];
+        if (current.isPaid) {
+          throw const ValidationException(
+            'Đơn hàng này đã được thanh toán thành công. Để hủy đơn và nhận lại tiền hoàn, vui lòng liên hệ Hotline/Zalo cửa hàng.',
+          );
+        }
         if (!current.status.canCustomerCancel) {
           throw const ValidationException(
             'Chỉ có thể hủy đơn hàng khi đang ở trạng thái Chờ xác nhận.',

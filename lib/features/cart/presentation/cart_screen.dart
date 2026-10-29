@@ -548,8 +548,8 @@ class _CartItemTile extends ConsumerWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(AppDimensions.radius8),
             child: Container(
-              width: 80,
-              height: 80,
+              width: 75,
+              height: 100,
               decoration: BoxDecoration(
                 color: AppColors.surfaceVariant,
                 borderRadius: BorderRadius.circular(AppDimensions.radius8),

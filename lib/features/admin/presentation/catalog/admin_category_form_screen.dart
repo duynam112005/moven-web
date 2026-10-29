@@ -231,10 +231,14 @@ class _AdminCategoryFormScreenState
                       ),
                     ),
                     const SizedBox(width: 24),
-                    SwitchListTile(
-                      title: const Text('Hiển thị công khai'),
-                      value: _isActive,
-                      onChanged: (v) => setState(() => _isActive = v),
+                    Expanded(
+                      child: SwitchListTile(
+                        title: const Text('Hiển thị công khai'),
+                        value: _isActive,
+                        onChanged: (v) => setState(() => _isActive = v),
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                      ),
                     ),
                   ],
                 ),

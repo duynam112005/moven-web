@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:moven/core/constants/app_colors.dart';
 import 'package:moven/core/constants/app_dimensions.dart';
 import 'package:moven/core/constants/app_typography.dart';
+import 'package:moven/core/utils/date_time_utils.dart';
 import 'package:moven/features/orders/domain/models/order.dart';
 import 'package:moven/features/orders/domain/models/order_status.dart';
 
@@ -116,7 +116,7 @@ class _OrderTimelineStepperState extends State<OrderTimelineStepper> {
                   )
                 else
                   ...order.statusHistory.map((hist) {
-                    final time = DateFormat('dd/MM/yyyy HH:mm').format(hist.createdAt);
+                    final time = DateTimeUtils.formatDateTime(hist.createdAt);
                     return Padding(
                       padding: const EdgeInsets.only(bottom: AppDimensions.space12),
                       child: Row(

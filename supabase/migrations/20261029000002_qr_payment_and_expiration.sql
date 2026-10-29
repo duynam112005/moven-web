@@ -517,6 +517,139 @@ BEGIN
 END;
 $$;
 
+-- 7. Update RPC customer_cancel_order
+-- Invariant: Customer cannot directly cancel an order that has already been paid online (payment_status = 'paid').
+-- They must contact store hotline/support for manual verification and bank transfer refund.
+CREATE OR REPLACE FUNCTION public.customer_cancel_order(
+    p_order_code TEXT,
+    p_cancellation_reason TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_user_id UUID;
+    v_order RECORD;
+    v_trimmed_reason TEXT;
+    v_item RECORD;
+BEGIN
+    -- 1. Check authentication
+    v_user_id := auth.uid();
+    IF v_user_id IS NULL THEN
+        RAISE EXCEPTION 'Unauthenticated: Bạn cần đăng nhập để thực hiện thao tác này.'
+            USING ERRCODE = 'P0001';
+    END IF;
+
+    -- 2. Validate reason
+    v_trimmed_reason := TRIM(COALESCE(p_cancellation_reason, ''));
+    IF v_trimmed_reason = '' THEN
+        RAISE EXCEPTION 'Validation error: Vui lòng cung cấp lý do hủy đơn hàng.'
+            USING ERRCODE = 'P0002';
+    END IF;
+
+    -- 3. Lock and retrieve order
+    SELECT * INTO v_order
+    FROM public.orders
+    WHERE order_code = p_order_code
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Không tìm thấy đơn hàng với mã %.', p_order_code
+            USING ERRCODE = 'P0003';
+    END IF;
+
+    -- 4. Check ownership
+    IF v_order.user_id <> v_user_id THEN
+        RAISE EXCEPTION 'Unauthorized: Bạn không có quyền thao tác trên đơn hàng này.'
+            USING ERRCODE = 'P0001';
+    END IF;
+
+    -- 5. Disallow cancelling already paid orders (ADR-0007 / Invariant)
+    IF v_order.payment_status = 'paid' THEN
+        RAISE EXCEPTION 'Đơn hàng này đã được thanh toán thành công. Để hủy đơn và nhận lại tiền hoàn, vui lòng liên hệ Hotline/Zalo cửa hàng.'
+            USING ERRCODE = 'P0004';
+    END IF;
+
+    -- 6. Validate status (Customer can only cancel during pending state)
+    IF v_order.status <> 'pending_confirmation' AND v_order.status <> 'pending' THEN
+        RAISE EXCEPTION 'Không thể hủy đơn hàng vì đơn đã được tiếp nhận xử lý hoặc đang vận chuyển (Trạng thái: %).', v_order.status
+            USING ERRCODE = 'P0004';
+    END IF;
+
+    -- 7. Atomically restock inventory and log inventory_movements
+    FOR v_item IN 
+        SELECT variant_id, quantity 
+        FROM public.order_items 
+        WHERE order_id = v_order.id
+    LOOP
+        IF v_item.variant_id IS NOT NULL THEN
+            UPDATE public.product_variants
+            SET 
+                stock_quantity = stock_quantity + v_item.quantity,
+                updated_at = clock_timestamp()
+            WHERE id = v_item.variant_id;
+
+            INSERT INTO public.inventory_movements (
+                id,
+                variant_id,
+                order_id,
+                quantity_delta,
+                reason,
+                created_by,
+                created_at
+            ) VALUES (
+                gen_random_uuid(),
+                v_item.variant_id,
+                v_order.id,
+                v_item.quantity,
+                'order_cancelled',
+                v_user_id,
+                clock_timestamp()
+            );
+        END IF;
+    END LOOP;
+
+    -- 8. Update order status
+    UPDATE public.orders
+    SET 
+        status = 'cancelled',
+        cancellation_reason = v_trimmed_reason,
+        cancelled_at = clock_timestamp(),
+        updated_at = clock_timestamp()
+    WHERE id = v_order.id;
+
+    -- 9. Record order status history
+    INSERT INTO public.order_status_history (
+        id,
+        order_id,
+        from_status,
+        to_status,
+        actor_id,
+        note,
+        created_at
+    ) VALUES (
+        gen_random_uuid(),
+        v_order.id,
+        v_order.status,
+        'cancelled',
+        v_user_id,
+        'Khách hủy đơn: ' || v_trimmed_reason,
+        clock_timestamp()
+    );
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'order_id', v_order.id,
+        'order_code', v_order.order_code,
+        'status', 'cancelled'
+    );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.customer_cancel_order(TEXT, TEXT) TO authenticated;
+
 -- Force PostgREST to reload schema cache
 NOTIFY pgrst, 'reload schema';
 
