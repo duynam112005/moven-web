@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/network/supabase_client.dart';
+import '../../../admin/presentation/providers/dashboard_providers.dart';
 import '../../data/orders_repository.dart';
 import '../../domain/models/order.dart';
 import '../../domain/models/order_status.dart';
@@ -94,6 +95,7 @@ class OrderActionController extends StateNotifier<AsyncValue<String?>> {
       _ref.invalidate(customerOrdersProvider);
       _ref.invalidate(orderDetailProvider(orderCode));
       _ref.invalidate(adminOrdersProvider);
+      _ref.invalidate(dashboardMetricsProvider);
 
       state = const AsyncValue.data('Hủy đơn hàng thành công.');
       return true;
@@ -120,6 +122,7 @@ class OrderActionController extends StateNotifier<AsyncValue<String?>> {
       _ref.invalidate(adminOrdersProvider);
       _ref.invalidate(orderDetailProvider(orderCode));
       _ref.invalidate(customerOrdersProvider);
+      _ref.invalidate(dashboardMetricsProvider);
 
       state = AsyncValue.data(
         'Đã cập nhật đơn hàng $orderCode sang trạng thái: ${newStatus.displayName}',
@@ -148,6 +151,7 @@ class OrderActionController extends StateNotifier<AsyncValue<String?>> {
       _ref.invalidate(adminOrdersProvider);
       _ref.invalidate(orderDetailProvider(orderCode));
       _ref.invalidate(customerOrdersProvider);
+      _ref.invalidate(dashboardMetricsProvider);
 
       state = const AsyncValue.data('Cập nhật trạng thái thanh toán thành công.');
       return true;

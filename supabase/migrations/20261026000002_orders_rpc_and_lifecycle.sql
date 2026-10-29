@@ -286,12 +286,13 @@ BEGIN
         END LOOP;
     END IF;
 
-    -- 5. Update Order record
+    -- 5. Update Order record (Automatically update payment_status = 'paid' on delivered per D-06)
     v_note := TRIM(COALESCE(p_note, ''));
     UPDATE public.orders
     SET 
         status = p_new_status,
         delivered_at = CASE WHEN p_new_status = 'delivered' THEN clock_timestamp() ELSE delivered_at END,
+        payment_status = CASE WHEN p_new_status = 'delivered' THEN 'paid' ELSE payment_status END,
         cancelled_at = CASE WHEN p_new_status = 'cancelled' THEN clock_timestamp() ELSE cancelled_at END,
         cancellation_reason = CASE WHEN p_new_status = 'cancelled' AND v_note <> '' THEN v_note ELSE cancellation_reason END,
         updated_at = clock_timestamp()

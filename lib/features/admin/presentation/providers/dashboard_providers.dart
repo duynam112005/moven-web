@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:moven/core/network/supabase_client.dart';
 import 'package:moven/features/admin/data/dashboard_repository.dart';
 import 'package:moven/features/admin/domain/models/dashboard_metrics.dart';
+import 'package:moven/features/orders/presentation/providers/orders_providers.dart';
 
 /// Các tùy chọn khoảng thời gian báo cáo trên Dashboard
 enum DashboardDateRange {
@@ -32,11 +33,12 @@ enum DashboardDateRange {
 
 /// Provider cung cấp DashboardRepository
 final dashboardRepositoryProvider = Provider<DashboardRepository>((ref) {
+  final ordersRepo = ref.watch(ordersRepositoryProvider);
   try {
     final client = ref.watch(supabaseClientProvider);
-    return DashboardRepository(client);
+    return DashboardRepository(client, ordersRepo);
   } catch (_) {
-    return DashboardRepository();
+    return DashboardRepository(null, ordersRepo);
   }
 });
 

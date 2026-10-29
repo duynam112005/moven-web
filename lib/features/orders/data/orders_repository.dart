@@ -13,6 +13,9 @@ class OrdersRepository {
   // Bộ nhớ đệm Mock Data khi chạy ở chế độ UI Preview hoặc Supabase chưa kết nối
   final List<Order> _mockOrders = [];
 
+  /// Danh sách đơn hàng giả lập (chỉ đọc) dùng cho preview/fallback
+  List<Order> get mockOrders => List.unmodifiable(_mockOrders);
+
   OrdersRepository(this._client) {
     _initMockOrders();
   }

@@ -24,8 +24,9 @@ void main() {
     await tester.pumpWidget(createTestWidget());
     await tester.pumpAndSettle();
 
-    // Verify header title
+    // Verify header title and refresh button
     expect(find.text('Tổng quan kinh doanh'), findsOneWidget);
+    expect(find.byTooltip('Làm mới số liệu'), findsOneWidget);
 
     // Verify time range filter chips
     expect(find.text('Hôm nay'), findsOneWidget);
